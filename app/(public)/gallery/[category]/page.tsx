@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
   const { category } = await params;
-  const data = readData();
+  const data = await readData();
   const cat = data.galleryCategories.find((c) => c.id === category);
   if (!cat) return { title: 'Gallery | Mangalam Acid and Chemicals' };
   return {
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
 
 export default async function GalleryCategoryPage({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params;
-  const data = readData();
+  const data = await readData();
   const cat = data.galleryCategories.find((c) => c.id === category);
   if (!cat) notFound();
 

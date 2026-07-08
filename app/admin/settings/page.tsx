@@ -31,6 +31,8 @@ export default function SettingsPage() {
   const [tagline, setTagline] = useState("Reliable Industrial Chemical Supplier in Vapi, Gujarat");
   const [metaDesc, setMetaDesc] = useState("");
   const [indiamartUrl, setIndiamartUrl] = useState("https://www.indiamart.com/mangalam-acid-chemicals/");
+  const [heroImage, setHeroImage] = useState("/assets/maac-media/images/hero-office-gate.jpg");
+  const [uploadingHero, setUploadingHero] = useState(false);
 
   // Security
   const [currentPw, setCurrentPw] = useState("");
@@ -57,6 +59,7 @@ export default function SettingsPage() {
         setMetaDesc(d.settings.metaDescription || metaDesc);
         setIndiamartUrl(d.settings.indiamartUrl || indiamartUrl);
       }
+      if (d.heroImage) setHeroImage(d.heroImage);
       setLoading(false);
     });
   }, []);
@@ -79,6 +82,25 @@ export default function SettingsPage() {
       showSaved("Site settings updated!");
     } catch { setError("Save failed."); }
     setSaving(false);
+  };
+
+  const handleHeroUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) { setError("Only image files (JPG, PNG, WEBP) are allowed."); return; }
+    setError(""); setUploadingHero(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "hero-image");
+      const token = sessionStorage.getItem("maac_admin_token") || "";
+      const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-admin-token": token }, body: formData });
+      const data = await res.json();
+      if (data.success) {
+        setHeroImage(data.path);
+        await adminPost("hero_image_save", { heroImage: data.path });
+        showSaved("Homepage image updated!");
+      } else setError(data.error || "Upload failed.");
+    } catch { setError("Upload failed."); }
+    setUploadingHero(false);
   };
 
   const savePassword = async () => {
@@ -205,6 +227,16 @@ export default function SettingsPage() {
 
       {tab === "site" && (
         <div style={{ maxWidth: 700 }}>
+          <div style={{ ...cardStyle, marginBottom: 20 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#1a4d2e", marginBottom: 6 }}>🖼️ Homepage Background Image</h2>
+            <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>This is the large background photo behind the homepage headline.</p>
+            <img src={heroImage} alt="Homepage background" style={{ width: "100%", maxWidth: 420, borderRadius: 10, border: "1px solid #e5e7eb", marginBottom: 12, display: "block" }} />
+            <input type="file" accept="image/*" id="hero-upload" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleHeroUpload(f); }} />
+            <button onClick={() => document.getElementById("hero-upload")?.click()} disabled={uploadingHero}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", background: uploadingHero ? "#e5e7eb" : "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: uploadingHero ? "not-allowed" : "pointer" }}>
+              <Save size={14} /> {uploadingHero ? "Uploading..." : "Replace Homepage Image"}
+            </button>
+          </div>
           <div style={cardStyle}>
             <h2 style={{ fontSize: 15, fontWeight: 700, color: "#1a4d2e", marginBottom: 20 }}>⚙️ Site Settings</h2>
             <Inp label="Company Name" value={siteName} onChange={setSiteName} />

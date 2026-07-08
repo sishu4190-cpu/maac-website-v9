@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Calendar, Clock, ArrowRight, BookOpen } from 'lucide-react';
 import { getAllBlogPosts } from '../../data/getAllBlogPosts';
-const blogPosts = getAllBlogPosts();
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Knowledge Centre | Mangalam Acid and Chemicals – Chemical Industry Insights',
@@ -12,7 +13,8 @@ export const metadata: Metadata = {
 
 const categories = ['All', 'Quality & Documentation', 'Procurement Guidance', 'Product Guides'];
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const blogPosts = await getAllBlogPosts();
   const sortedPosts = [...blogPosts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const blogSchema = {

@@ -104,15 +104,13 @@ const documents = [
   },
 ];
 
-export default function DownloadsPage() {
+export default async function DownloadsPage() {
   // Read dynamic catalogue file from admin
   let catalogueFile = '/assets/maac-media/certificates/MAAC-Product-Catalogue.pdf';
   try {
-    if (typeof window === 'undefined') {
-      const { readData } = require('@/app/lib/dataStore');
-      const d = readData();
-      if (d.catalogueFile) catalogueFile = d.catalogueFile;
-    }
+    const { readData } = await import('@/app/lib/dataStore');
+    const d = await readData();
+    if (d.catalogueFile) catalogueFile = d.catalogueFile;
   } catch {}
   // Patch catalogue file dynamically
   const allDocs = documents.map(section => ({

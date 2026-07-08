@@ -30,8 +30,8 @@ const faq = [
   { q: 'Can you supply chemicals that require export documentation?', a: 'Yes. We hold a valid IEC (Import-Export Code: ABPFM7919L) and can supply chemicals for export. Contact us with your product and destination country for available documentation and compliance requirements.' },
 ];
 
-export default function QualityPage() {
-  const activeCertifications = getActiveCertifications();
+export default async function QualityPage() {
+  const activeCertifications = await getActiveCertifications();
 
   const faqSchema = {
     '@context': 'https://schema.org',

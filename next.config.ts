@@ -48,6 +48,14 @@ const nextConfig: NextConfig = {
   // Experimental features for performance
   experimental: {
     optimizeCss: true,
+    // Admin-managed content (products, gallery, certificates, blog, etc.)
+    // changes at any time — disable the client Router Cache's staleTime so
+    // every navigation always fetches the current server-rendered content
+    // instead of a cached copy from a few seconds/minutes ago.
+    staleTimes: {
+      dynamic: 0,
+      static: 30,
+    },
   },
 
   // Powered by header removal

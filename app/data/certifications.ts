@@ -92,9 +92,9 @@ export const certifications: CertificationInfo[] = [
   },
 ];
 
-export function getActiveCertifications(): CertificationInfo[] {
+export async function getActiveCertifications(): Promise<CertificationInfo[]> {
   try {
-    const data = readData();
+    const data = await readData();
     if (data.certificateOverrides && data.certificateOverrides.length > 0) {
       return [...data.certificateOverrides].sort((a, b) => a.order - b.order);
     }
@@ -102,6 +102,7 @@ export function getActiveCertifications(): CertificationInfo[] {
   return certifications;
 }
 
-export function getCertificationById(id: string): CertificationInfo | undefined {
-  return getActiveCertifications().find((c) => c.id === id);
+export async function getCertificationById(id: string): Promise<CertificationInfo | undefined> {
+  const all = await getActiveCertifications();
+  return all.find((c) => c.id === id);
 }

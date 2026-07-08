@@ -6,13 +6,11 @@ import { getCoaUrl } from "@/app/data/coaMapping";
 import FAQAccordion from "@/app/components/FAQAccordion";
 import { CheckCircle, Package, FileText, ArrowRight, FlaskConical, Phone, Download } from "lucide-react";
 
-function getProductOverride(productId: string) {
+async function getProductOverride(productId: string) {
   try {
-    if (typeof window === "undefined") {
-      const { readData } = require("@/app/lib/dataStore");
-      const data = readData();
-      return (data.productOverrides || {})[productId] || null;
-    }
+    const { readData } = await import("@/app/lib/dataStore");
+    const data = await readData();
+    return (data.productOverrides || {})[productId] || null;
   } catch {}
   return null;
 }
@@ -30,7 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   const cat = getCategoryBySlug(category);
   const product = cat?.products.find((p) => p.id === productId);
   if (!cat || !product) return { title: "Product Not Found" };
-  const override = getProductOverride(productId);
+  const override = await getProductOverride(productId);
   const name = override?.name || product.name;
   const desc = override?.description || product.description;
   return {
@@ -45,7 +43,7 @@ export default async function ProductPage({ params }: { params: Promise<{ catego
   const cat = getCategoryBySlug(category);
   const baseProduct = cat?.products.find((p) => p.id === productId);
   if (!cat || !baseProduct) notFound();
-  const override = getProductOverride(productId);
+  const override = await getProductOverride(productId);
   const product = {
     ...baseProduct,
     name: override?.name || baseProduct.name,

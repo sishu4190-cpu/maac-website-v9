@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const cert = getCertificationById(id);
+  const cert = await getCertificationById(id);
   if (!cert) return { title: 'Certificate | Mangalam Acid and Chemicals' };
   return {
     title: `${cert.name} | Mangalam Acid and Chemicals`,
@@ -18,10 +18,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function CertificateDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const cert = getCertificationById(id);
+  const cert = await getCertificationById(id);
   if (!cert) notFound();
 
-  const all = getActiveCertifications();
+  const all = await getActiveCertifications();
   const others = all.filter((c) => c.id !== cert.id).slice(0, 3);
 
   const certSchema = {

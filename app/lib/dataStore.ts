@@ -1,7 +1,15 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { put, list } from '@vercel/blob';
 
 const DATA_FILE = join(process.cwd(), 'admin-data.json');
+const BLOB_DATA_PATH = 'data/admin-data.json';
+
+// On Vercel, the local filesystem is read-only/ephemeral — writes vanish
+// between requests. When a Blob store is connected (BLOB_READ_WRITE_TOKEN
+// present), we persist there instead. Locally (npm run dev), we keep using
+// the plain JSON file so no cloud setup is required to develop.
+const useBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
 export interface ContactData {
   phones: string[];
@@ -132,6 +140,7 @@ export interface AppData {
   certificateOverrides: CertificateData[] | null;
   galleryCategories: GalleryCategory[];
   catalogueFile: string | null;
+  heroImage: string;
   activityLog: ActivityLogEntry[];
   adminPassword?: string;
   otpData?: { otp: string; expires: number; used: boolean } | null;
@@ -198,34 +207,60 @@ export function getDefaultData(): AppData {
       { id: 'import-export', name: 'Import / Export', tagline: 'Global trade & logistics', cover: null, images: [], comingSoon: true },
     ],
     catalogueFile: null,
+    heroImage: '/assets/maac-media/images/hero-office-gate.jpg',
     activityLog: [],
     adminPassword: undefined,
     otpData: null,
   };
 }
 
-export function readData(): AppData {
+async function readRawJson(): Promise<Record<string, unknown> | null> {
+  if (useBlob()) {
+    try {
+      const { blobs } = await list({ prefix: BLOB_DATA_PATH, limit: 1 });
+      const found = blobs.find((b) => b.pathname === BLOB_DATA_PATH);
+      if (!found) return null;
+      // Cache-bust so we always read the latest write, not a stale CDN copy.
+      const res = await fetch(`${found.url}?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      console.error('[dataStore] Blob read error:', e);
+      return null;
+    }
+  }
   try {
     if (existsSync(DATA_FILE)) {
-      const raw = readFileSync(DATA_FILE, 'utf8');
-      const parsed = JSON.parse(raw);
+      return JSON.parse(readFileSync(DATA_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('[dataStore] Local read error:', e);
+  }
+  return null;
+}
+
+export async function readData(): Promise<AppData> {
+  try {
+    const parsed = await readRawJson();
+    if (parsed) {
       const defaults = getDefaultData();
       return {
-        contact: { ...defaults.contact, ...parsed.contact },
-        settings: { ...defaults.settings, ...parsed.settings },
-        enquiries: parsed.enquiries || [],
-        blogPosts: parsed.blogPosts || [],
-        customProducts: parsed.customProducts || [],
-        hiddenProducts: parsed.hiddenProducts || [],
-        customCategories: parsed.customCategories || [],
-        coaFiles: parsed.coaFiles || {},
-        productOverrides: parsed.productOverrides || {},
-        certificateOverrides: parsed.certificateOverrides || null,
-        galleryCategories: mergeGalleryCategories(defaults.galleryCategories, parsed.galleryCategories),
-        catalogueFile: parsed.catalogueFile || null,
-        activityLog: Array.isArray(parsed.activityLog) ? parsed.activityLog.slice(0, 500) : [],
-        adminPassword: parsed.adminPassword,
-        otpData: parsed.otpData || null,
+        contact: { ...defaults.contact, ...(parsed.contact as object) },
+        settings: { ...defaults.settings, ...(parsed.settings as object) },
+        enquiries: (parsed.enquiries as AppData['enquiries']) || [],
+        blogPosts: (parsed.blogPosts as AppData['blogPosts']) || [],
+        customProducts: (parsed.customProducts as AppData['customProducts']) || [],
+        hiddenProducts: (parsed.hiddenProducts as string[]) || [],
+        customCategories: (parsed.customCategories as AppData['customCategories']) || [],
+        coaFiles: (parsed.coaFiles as Record<string, string>) || {},
+        productOverrides: (parsed.productOverrides as AppData['productOverrides']) || {},
+        certificateOverrides: (parsed.certificateOverrides as AppData['certificateOverrides']) || null,
+        galleryCategories: mergeGalleryCategories(defaults.galleryCategories, parsed.galleryCategories as GalleryCategory[]),
+        catalogueFile: (parsed.catalogueFile as string) || null,
+        heroImage: (parsed.heroImage as string) || defaults.heroImage,
+        activityLog: Array.isArray(parsed.activityLog) ? (parsed.activityLog as ActivityLogEntry[]).slice(0, 500) : [],
+        adminPassword: parsed.adminPassword as string | undefined,
+        otpData: (parsed.otpData as AppData['otpData']) || null,
       };
     }
     if (process.env.ADMIN_DATA_JSON) {
@@ -238,12 +273,28 @@ export function readData(): AppData {
   return getDefaultData();
 }
 
-export function writeData(data: AppData): boolean {
+export async function writeData(data: AppData): Promise<boolean> {
+  const json = JSON.stringify(data, null, 2);
+  if (useBlob()) {
+    try {
+      await put(BLOB_DATA_PATH, json, {
+        access: 'public',
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        contentType: 'application/json',
+        cacheControlMaxAge: 0,
+      });
+      return true;
+    } catch (e) {
+      console.error('[dataStore] Blob write error:', e);
+      return false;
+    }
+  }
   try {
-    writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    writeFileSync(DATA_FILE, json, 'utf8');
     return true;
   } catch (e) {
-    console.error('[dataStore] Write error:', e);
+    console.error('[dataStore] Local write error:', e);
     return false;
   }
 }

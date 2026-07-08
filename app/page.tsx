@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://mangalamchemicals.com" },
 };
 
+export const dynamic = "force-dynamic";
+
 const productCategories = [
   {
     id: "sulphates-fertilizers",
@@ -108,7 +110,10 @@ const blogPosts = [
   { title: "Difference Between Industrial Grade and Fertilizer Grade Chemicals", slug: "industrial-grade-vs-fertilizer-grade-chemicals", date: "May 2025", readTime: "5 min", tag: "Buying Guide" },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const { readData } = await import("./lib/dataStore");
+  const { heroImage } = await readData();
+
   return (
     <>
       {/* ── Hero section with video background ─────────────── */}
@@ -116,7 +121,7 @@ export default function Home() {
         {/* Hero background image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/assets/maac-media/images/hero-office-gate.jpg"
+          src={heroImage}
           alt=""
           aria-hidden="true"
           style={{

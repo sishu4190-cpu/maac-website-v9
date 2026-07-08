@@ -18,8 +18,8 @@ const ICONS: Record<string, React.ComponentType<{ size?: number; style?: React.C
   'import-export': Ship,
 };
 
-export default function GalleryPage() {
-  const data = readData();
+export default async function GalleryPage() {
+  const data = await readData();
   const categories = data.galleryCategories;
 
   const gallerySchema = {

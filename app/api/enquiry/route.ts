@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
     };
 
     // Save to admin-data.json
-    const data = readData();
+    const data = await readData();
     data.enquiries.unshift(enquiry);
-    writeData(data);
+    await writeData(data);
 
     // Console log for development
     console.log('[MAAC Enquiry]', enquiry.id, enquiry.product, enquiry.company);

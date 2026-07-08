@@ -1,0 +1,15 @@
+{
+  "name": "MAAC Admin",
+  "short_name": "MAAC Admin",
+  "description": "Manage Mangalam Acid and Chemicals website — products, gallery, certificates, blog, enquiries and settings.",
+  "start_url": "/admin/login",
+  "scope": "/admin",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f2d1a",
+  "theme_color": "#1a4d2e",
+  "icons": [
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
