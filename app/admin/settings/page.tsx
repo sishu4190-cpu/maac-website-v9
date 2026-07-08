@@ -15,7 +15,7 @@ export default function SettingsPage() {
 
   // Contact
   const [phones, setPhones] = useState(["+91 96620 88122", "+91 90818 32790", "+91 95379 70043"]);
-  const [emails, setEmails] = useState(["mangalamacidandchemicals@gmail.com", "info_maac@yahoo.com"]);
+  const [emails, setEmails] = useState(["info@mangalamchemicals.com", "inquiry@mangalamchemicals.com"]);
   const [address, setAddress] = useState("PT 209, SH-305, 3rd Floor, Girnar Khushboo Plaza, Vapi INA (INA), Pardi, Valsad – 396195, Gujarat, India");
   const [hours, setHours] = useState("Monday – Saturday, 9:00 AM – 7:00 PM IST");
   const [whatsapp, setWhatsapp] = useState("+91 96620 88122");

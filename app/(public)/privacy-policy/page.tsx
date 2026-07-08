@@ -91,7 +91,7 @@ export default function PrivacyPolicyPage() {
                 </li>
               ))}
             </ul>
-            <p className="text-gray-700 text-sm mt-3">To exercise any of these rights, contact us at <a href="mailto:mangalamacidandchemicals@gmail.com" className="text-freshGreen hover:underline">mangalamacidandchemicals@gmail.com</a>.</p>
+            <p className="text-gray-700 text-sm mt-3">To exercise any of these rights, contact us at <a href="mailto:info@mangalamchemicals.com" className="text-freshGreen hover:underline">info@mangalamchemicals.com</a>.</p>
           </section>
 
           <section>
@@ -114,7 +114,7 @@ export default function PrivacyPolicyPage() {
             <div className="bg-gray-50 rounded-xl p-5 text-sm text-gray-700">
               <p className="font-semibold">Mangalam Acid and Chemicals</p>
               <p className="mt-1">PT 209, SH-305, 3rd Floor, Girnar Khushboo Plaza, Vapi INA (INA), Pardi, Valsad – 396195, Gujarat, India</p>
-              <p className="mt-1">Email: <a href="mailto:mangalamacidandchemicals@gmail.com" className="text-freshGreen hover:underline">mangalamacidandchemicals@gmail.com</a></p>
+              <p className="mt-1">Email: <a href="mailto:info@mangalamchemicals.com" className="text-freshGreen hover:underline">info@mangalamchemicals.com</a></p>
               <p>Phone: <a href="tel:+919662088122" className="text-freshGreen hover:underline">+91 96620 88122</a></p>
             </div>
           </section>

@@ -5,13 +5,13 @@ import { adminGet, adminPost } from "../lib/api";
 import { Upload, Trash2, Save, RefreshCw, CheckCircle, AlertCircle, Plus, Edit2, X, Download, GripVertical } from "lucide-react";
 
 const DEFAULT_CERTS = [
-  { id: "gst", name: "GST Registration Certificate", code: "24ABPFM7919L1ZK", desc: "Goods and Services Tax Registration Certificate issued by Government of India.", icon: "🇮🇳", file: "/assets/maac-media/certificates/GST-Certificate.pdf", validUntil: "Permanent", issued: "17 Jun 2026", order: 0 },
-  { id: "iso9001", name: "ISO 9001:2015", code: "IN59785A", desc: "Quality Management System certification ensuring consistent product quality.", icon: "🏆", file: "/assets/maac-media/certificates/ISO-9001-2015.pdf", validUntil: "11 May 2028", issued: "12 May 2025", order: 1 },
-  { id: "iso45001", name: "ISO 45001:2018", code: "IN59785C-1", desc: "Occupational Health & Safety Management System certification.", icon: "🛡️", file: "/assets/maac-media/certificates/ISO-45001-2018.pdf", validUntil: "11 May 2028", issued: "12 May 2025", order: 2 },
-  { id: "msme", name: "MSME UDYAM", code: "GJ-25-0006759", desc: "Registered under Ministry of Micro, Small and Medium Enterprises.", icon: "🏛️", file: "/assets/maac-media/certificates/MSME-UDYAM.pdf", validUntil: "Permanent", issued: "01 Mar 2021", order: 3 },
-  { id: "iec", name: "IEC — Import/Export Code", code: "ABPFM7919L", desc: "Importer-Exporter Code issued by DGFT, Ministry of Commerce & Industry.", icon: "🌏", file: "/assets/maac-media/certificates/IEC-certificate.pdf", validUntil: "Permanent", issued: "31 Mar 2023", order: 4 },
-  { id: "dnb", name: "D&B DUNS", code: "813884357", desc: "Dun & Bradstreet registered business identity number.", icon: "✅", file: null, validUntil: "Active", issued: "Registered", order: 5 },
-  { id: "indiamart", name: "IndiaMART TrustSEAL", code: "Certified July 2024", desc: "IndiaMart TrustSEAL verified supplier with authenticated business credentials.", icon: "🔏", file: "/assets/maac-media/certificates/IndiaMART-TrustSEAL.pdf", validUntil: "Active", issued: "July 2024", order: 6 },
+  { id: "gst", name: "GST Registration Certificate", code: "24ABPFM7919L1ZK", desc: "Goods and Services Tax Registration Certificate issued by Government of India.", icon: "🇮🇳", file: "/assets/maac-media/certificates/GST-Certificate.pdf", image: "/assets/maac-media/certificate-photos/gst.jpg" as string | null, validUntil: "Permanent", issued: "17 Jun 2026", order: 0 },
+  { id: "iso9001", name: "ISO 9001:2015", code: "IN59785A", desc: "Quality Management System certification ensuring consistent product quality.", icon: "🏆", file: "/assets/maac-media/certificates/ISO-9001-2015.pdf", image: "/assets/maac-media/certificate-photos/iso9001.jpg" as string | null, validUntil: "11 May 2028", issued: "12 May 2025", order: 1 },
+  { id: "iso45001", name: "ISO 45001:2018", code: "IN59785C-1", desc: "Occupational Health & Safety Management System certification.", icon: "🛡️", file: "/assets/maac-media/certificates/ISO-45001-2018.pdf", image: "/assets/maac-media/certificate-photos/iso45001.jpg" as string | null, validUntil: "11 May 2028", issued: "12 May 2025", order: 2 },
+  { id: "msme", name: "MSME UDYAM", code: "GJ-25-0006759", desc: "Registered under Ministry of Micro, Small and Medium Enterprises.", icon: "🏛️", file: "/assets/maac-media/certificates/MSME-UDYAM.pdf", image: "/assets/maac-media/certificate-photos/msme.jpg" as string | null, validUntil: "Permanent", issued: "01 Mar 2021", order: 3 },
+  { id: "iec", name: "IEC — Import/Export Code", code: "ABPFM7919L", desc: "Importer-Exporter Code issued by DGFT, Ministry of Commerce & Industry.", icon: "🌏", file: "/assets/maac-media/certificates/IEC-certificate.pdf", image: "/assets/maac-media/certificate-photos/iec.jpg" as string | null, validUntil: "Permanent", issued: "31 Mar 2023", order: 4 },
+  { id: "dnb", name: "D&B DUNS", code: "813884357", desc: "Dun & Bradstreet registered business identity number.", icon: "✅", file: null, image: null as string | null, validUntil: "Active", issued: "Registered", order: 5 },
+  { id: "indiamart", name: "IndiaMART TrustSEAL", code: "Certified July 2024", desc: "IndiaMart TrustSEAL verified supplier with authenticated business credentials.", icon: "🔏", file: "/assets/maac-media/certificates/IndiaMART-TrustSEAL.pdf", image: "/assets/maac-media/certificate-photos/indiamart.jpg" as string | null, validUntil: "Active", issued: "July 2024", order: 6 },
 ];
 
 type Cert = typeof DEFAULT_CERTS[0];
@@ -24,7 +24,9 @@ export default function CertificatesPage() {
   const [editing, setEditing] = useState<Cert | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const imageRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
     adminGet().then(d => {
@@ -63,6 +65,24 @@ export default function CertificatesPage() {
     setUploading(false);
   };
 
+  const handleImageUpload = async (certId: string, file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("Only image files (JPG, PNG, WEBP) are allowed."); return; }
+    setError(""); setUploadingImg(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", `cert-photo-${certId}`);
+      const token = sessionStorage.getItem("maac_admin_token") || "";
+      const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-admin-token": token }, body: formData });
+      const data = await res.json();
+      if (data.success) {
+        setEditing(prev => prev ? { ...prev, image: data.path } : null);
+      } else setError(data.error || "Upload failed.");
+    } catch { setError("Upload failed."); }
+    setUploadingImg(false);
+  };
+
   const saveEdit = async () => {
     if (!editing) return;
     let updated: Cert[];
@@ -81,7 +101,7 @@ export default function CertificatesPage() {
   };
 
   const startNew = () => {
-    setEditing({ id: `cert-${Date.now()}`, name: "", code: "", desc: "", icon: "📄", file: null, validUntil: "", issued: "", order: certs.length });
+    setEditing({ id: `cert-${Date.now()}`, name: "", code: "", desc: "", icon: "📄", file: null, image: null, validUntil: "", issued: "", order: certs.length });
     setIsNew(true);
   };
 
@@ -112,7 +132,23 @@ export default function CertificatesPage() {
           {inp("Issued Date", "issued", "e.g. 12 May 2025")}
 
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Certificate PDF</label>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Certificate Photo (shown directly on Quality page)</label>
+            {editing.image && (
+              <div style={{ marginBottom: 8 }}>
+                <img src={editing.image} alt="Certificate" style={{ width: "100%", maxWidth: 260, borderRadius: 8, border: "1px solid #e5e7eb", display: "block", marginBottom: 8 }} />
+                <button onClick={() => setEditing(prev => prev ? { ...prev, image: null } : null)} style={{ fontSize: 11, color: "#dc2626", background: "none", border: "none", cursor: "pointer", padding: 0 }}>Remove photo</button>
+              </div>
+            )}
+            <input type="file" accept="image/*" ref={el => { imageRefs.current[editing.id] = el; }} style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(editing.id, f); }} />
+            <button onClick={() => imageRefs.current[editing.id]?.click()} disabled={uploadingImg}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: uploadingImg ? "#e5e7eb" : "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, cursor: uploadingImg ? "not-allowed" : "pointer", fontWeight: 600 }}>
+              <Upload size={14} />{uploadingImg ? "Uploading..." : editing.image ? "Replace Photo" : "Upload Photo"}
+            </button>
+            <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>This image is shown directly on the Quality page and the certificate&apos;s detail page — no download needed to view it.</p>
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Certificate PDF (optional, for download)</label>
             {editing.file && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: "8px 12px", marginBottom: 8 }}>
                 <span style={{ fontSize: 12, color: "#15803d", flex: 1 }}>{editing.file.split("/").pop()}</span>
@@ -160,7 +196,11 @@ export default function CertificatesPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {certs.sort((a, b) => a.order - b.order).map(cert => (
           <div key={cert.id} style={{ ...cardStyle, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ fontSize: 24, flexShrink: 0 }}>{cert.icon}</div>
+            {cert.image ? (
+              <img src={cert.image} alt={cert.name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
+            ) : (
+              <div style={{ fontSize: 24, flexShrink: 0 }}>{cert.icon}</div>
+            )}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{cert.name}</div>
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>

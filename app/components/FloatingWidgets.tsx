@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useSiteData } from "../lib/useSiteData";
 
 // ── WhatsApp floating button ──────────────────────────────
@@ -38,7 +39,7 @@ const COMPANY_SYSTEM = `You are MaacBot, the expert AI assistant for Mangalam Ac
 - Location: PT 209, SH-305, 3rd Floor, Girnar Khushboo Plaza, Vapi INA, Pardi, Valsad – 396195, Gujarat, India
 - Phones: +91 96620 88122 / +91 90818 32790 / +91 95379 70043
 - WhatsApp: +91 96620 88122
-- Email: mangalamacidandchemicals@gmail.com / info_maac@yahoo.com
+- Email: info@mangalamchemicals.com / inquiry@mangalamchemicals.com
 - Website: mangalamchemicals.com
 - Hours: Monday–Saturday, 9 AM – 7 PM IST
 - Certifications: ISO 9001:2015 (IN59785A), ISO 45001:2018 (IN59785C-1), MSME UDYAM (GJ-25-0006759), D&B DUNS (813884357), IndiaMART TrustSEAL, IEC (ABPFM7919L)
@@ -375,15 +376,36 @@ export function PageLoader() {
 
 // ── Scroll Reveal ─────────────────────────────────────────
 export function ScrollReveal() {
+  const pathname = usePathname();
   useEffect(() => {
-    const els = document.querySelectorAll(".reveal, .reveal-left, .reveal-scale");
-    if (!els.length) return;
-    const obs = new IntersectionObserver(
-      (entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("revealed"); obs.unobserve(e.target); } }); },
-      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
-    );
-    els.forEach(el => obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
+    // Re-scan for reveal elements every time the route changes (client-side
+    // navigation doesn't remount this component, so without this the new
+    // page's content stayed at opacity:0 until a hard refresh).
+    let obs: IntersectionObserver | null = null;
+    let safety: ReturnType<typeof setTimeout> | null = null;
+
+    const raf = requestAnimationFrame(() => {
+      const els = document.querySelectorAll(".reveal, .reveal-left, .reveal-scale");
+      if (!els.length) return;
+      obs = new IntersectionObserver(
+        (entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("revealed"); obs?.unobserve(e.target); } }); },
+        { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+      );
+      els.forEach(el => obs?.observe(el));
+      // Safety net: guarantee everything becomes visible even if the
+      // observer misses an element for any reason (e.g. zero-height parent
+      // during a transition).
+      safety = setTimeout(() => {
+        document.querySelectorAll(".reveal, .reveal-left, .reveal-scale").forEach(el => el.classList.add("revealed"));
+        obs?.disconnect();
+      }, 700);
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      obs?.disconnect();
+      if (safety) clearTimeout(safety);
+    };
+  }, [pathname]);
   return null;
 }

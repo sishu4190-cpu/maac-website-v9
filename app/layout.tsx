@@ -86,7 +86,7 @@ const orgSchema = {
     { "@type": "ContactPoint", telephone: "+91-90818-32790", contactType: "customer service", areaServed: "IN" },
     { "@type": "ContactPoint", telephone: "+91-95379-70043", contactType: "technical support", areaServed: "IN" },
   ],
-  email: "mangalamacidandchemicals@gmail.com",
+  email: "info@mangalamchemicals.com",
   numberOfEmployees: { "@type": "QuantitativeValue", minValue: 10, maxValue: 50 },
   sameAs: [
     "https://www.instagram.com/mangalamchemicals",
@@ -113,7 +113,7 @@ const localBusinessSchema = {
   image: "https://mangalamchemicals.com/assets/maac-media/images/maac-logo-full.webp",
   url: "https://mangalamchemicals.com",
   telephone: "+91-96620-88122",
-  email: "mangalamacidandchemicals@gmail.com",
+  email: "info@mangalamchemicals.com",
   address: {
     "@type": "PostalAddress",
     streetAddress: "PT 209, SH-305, 3rd Floor, Girnar Khushboo Plaza, Vapi INA (INA), Pardi",

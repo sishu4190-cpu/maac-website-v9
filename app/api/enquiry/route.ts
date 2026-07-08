@@ -38,9 +38,16 @@ export async function POST(request: NextRequest) {
     // Console log for development
     console.log('[MAAC Enquiry]', enquiry.id, enquiry.product, enquiry.company);
 
-    // TODO: Connect Nodemailer when SMTP_* env vars are set
-    // const { sendEnquiryEmail } = await import('@/app/lib/email');
-    // await sendEnquiryEmail(enquiry);
+    // Send email notification (does not block/fail the enquiry save if email fails)
+    try {
+      const { sendEnquiryEmail } = await import('@/app/lib/email');
+      const result = await sendEnquiryEmail(enquiry);
+      if (!result.success) {
+        console.warn('[MAAC Enquiry] Email notification failed:', result.error);
+      }
+    } catch (emailErr) {
+      console.warn('[MAAC Enquiry] Email notification threw:', emailErr);
+    }
 
     return NextResponse.json({
       success: true,

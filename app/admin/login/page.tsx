@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Eye, EyeOff, Lock, AlertCircle, CheckCircle, ArrowLeft, Phone, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, AlertCircle, CheckCircle, ArrowLeft, Mail } from 'lucide-react';
 
 type Mode = 'login' | 'forgot' | 'otp' | 'reset' | 'done';
 
@@ -16,7 +16,6 @@ export default function AdminLogin() {
   const [otpValue, setOtpValue] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
-  const [displayOtp, setDisplayOtp] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,9 +44,8 @@ export default function AdminLogin() {
       });
       const data = await res.json();
       if (data.success) {
-        setDisplayOtp(data.otp || '');
         setMode('otp');
-        setSuccess('OTP generated! Check the box below (also logged to console if SMTP not configured).');
+        setSuccess(data.message || 'OTP sent! Check your registered email inbox.');
       } else setError(data.error || 'Failed to generate OTP.');
     } catch { setError('Server error. Please try again.'); }
     setLoading(false);
@@ -146,21 +144,14 @@ export default function AdminLogin() {
           <>
             <button onClick={() => setMode('login')} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 20 }}><ArrowLeft size={14} /> Back to Login</button>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 6 }}>Reset Password</h2>
-            <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 24 }}>An OTP will be sent to your registered email and WhatsApp for verification.</p>
+            <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 24 }}>A verification code will be emailed to the registered admin recovery address.</p>
 
             <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 12, padding: 16, marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Mail size={16} style={{ color: '#1a4d2e' }} />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 13, color: '#1a4d2e' }}>Email OTP</div>
                   <div style={{ fontSize: 12, color: '#6b7280' }}>mangalamacidandchemicals@gmail.com</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Phone size={16} style={{ color: '#1a4d2e' }} />
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 13, color: '#1a4d2e' }}>WhatsApp / SMS</div>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>+91 96620 88122</div>
                 </div>
               </div>
             </div>
@@ -177,12 +168,7 @@ export default function AdminLogin() {
             <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 6 }}>Enter OTP & New Password</h2>
             <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 20 }}>OTP is valid for 10 minutes.</p>
 
-            {displayOtp && (
-              <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: 14, marginBottom: 20, textAlign: 'center' }}>
-                <div style={{ fontSize: 12, color: '#92400e', marginBottom: 6, fontWeight: 600 }}>⚠️ OTP (for demo — in production check email/WhatsApp):</div>
-                <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: 8, color: '#1a4d2e', fontFamily: 'monospace' }}>{displayOtp}</div>
-              </div>
-            )}
+
 
             {error && <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#dc2626', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><AlertCircle size={14} />{error}</div>}
             {success && <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#15803d', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle size={14} />{success}</div>}

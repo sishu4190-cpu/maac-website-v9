@@ -2,7 +2,7 @@
 import { useState, useEffect, ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, MessageSquare, FileText, BookOpen, Settings, LogOut, Menu, X, ExternalLink, Award, FileArchive } from "lucide-react";
+import { LayoutDashboard, Package, MessageSquare, FileText, BookOpen, Settings, LogOut, Menu, X, ExternalLink, Award, FileArchive, Images, History } from "lucide-react";
 
 const nav = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -11,7 +11,9 @@ const nav = [
   { label: "Blog Posts", href: "/admin/blog", icon: BookOpen },
   { label: "Catalogue PDF", href: "/admin/catalogue", icon: FileArchive },
   { label: "Certificates", href: "/admin/certificates", icon: Award },
+  { label: "Gallery", href: "/admin/gallery", icon: Images },
   { label: "Documents", href: "/admin/documents", icon: FileText },
+  { label: "Activity Log", href: "/admin/activity", icon: History },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
@@ -25,6 +27,9 @@ export default function AdminShell({ children, title }: { children: ReactNode; t
     if (!token) { window.location.href = "/admin/login"; return; }
     setAuth(true);
   }, []);
+
+  // Close the mobile sidebar automatically whenever the route changes.
+  useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
   const handleLogout = () => {
     sessionStorage.removeItem("maac_admin_token");
@@ -43,67 +48,177 @@ export default function AdminShell({ children, title }: { children: ReactNode; t
 
   const isActive = (href: string) => href === "/admin" ? pathname === "/admin" : pathname?.startsWith(href);
 
-  const SidebarContent = ({ onClose }: { onClose?: () => void }) => (
-    <>
-      <div style={{ padding: "20px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src="/assets/maac-media/images/maac-logo-avatar.webp" alt="MAAC" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain", background: "white", padding: 2 }} />
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.2, color: "white" }}>MAAC Admin</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>Mangalam Chemicals</div>
-          </div>
-        </div>
-        {onClose && <button onClick={onClose} style={{ background: "none", border: "none", color: "white", cursor: "pointer" }}><X size={20} /></button>}
-      </div>
-      <nav style={{ flex: 1, padding: "12px 8px", overflowY: "auto" }}>
-        {nav.map(item => {
-          const active = isActive(item.href);
-          return (
-            <Link key={item.href} href={item.href} onClick={onClose}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, marginBottom: 2, textDecoration: "none", fontSize: 13, fontWeight: active ? 600 : 400, background: active ? "rgba(255,255,255,0.15)" : "transparent", color: active ? "white" : "rgba(255,255,255,0.65)" }}>
-              <item.icon size={16} />{item.label}
-            </Link>
-          );
-        })}
-      </nav>
-      <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-        <a href="/" target="_blank" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 12 }}>
-          <ExternalLink size={12} /> View Website
-        </a>
-        <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#fca5a5", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-          <LogOut size={14} /> Sign Out
-        </button>
-      </div>
-    </>
-  );
-
   return (
-    <div style={{ minHeight: "100vh", background: "#f3f4f6", display: "flex", position: "relative", zIndex: 1 }}>
-      {sidebarOpen && <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 40 }} onClick={() => setSidebarOpen(false)} />}
+    <div className="admin-shell">
+      {/* Mobile backdrop */}
+      <div
+        className="admin-backdrop"
+        data-open={sidebarOpen}
+        onClick={() => setSidebarOpen(false)}
+      />
 
-      {/* Desktop Sidebar */}
-      <aside style={{ width: 220, background: "linear-gradient(180deg, #0f2d1a 0%, #1a4d2e 100%)", color: "white", display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, height: "100%", zIndex: 50 }} className="hidden lg:flex">
-        <SidebarContent />
-      </aside>
-
-      {/* Mobile Sidebar */}
-      <aside style={{ width: 220, background: "linear-gradient(180deg, #0f2d1a 0%, #1a4d2e 100%)", color: "white", display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, height: "100%", zIndex: 50, transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease" }} className="lg:hidden">
-        <SidebarContent onClose={() => setSidebarOpen(false)} />
-      </aside>
-
-      <div style={{ flex: 1, marginLeft: 220, display: "flex", flexDirection: "column", minHeight: "100vh" }} className="lg:ml-[220px] ml-0">
-        <header style={{ background: "white", borderBottom: "1px solid #e5e7eb", padding: "0 24px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 30 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden" style={{ background: "none", border: "none", cursor: "pointer", color: "#374151", padding: 4 }}><Menu size={22} /></button>
-            <h1 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>{title || "Dashboard"}</h1>
+      {/* Sidebar — single element, shown/positioned purely via CSS (no Tailwind breakpoint dependency) */}
+      <aside className="admin-sidebar" data-open={sidebarOpen}>
+        <div className="admin-sidebar-head">
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <img src="/assets/maac-media/images/maac-logo-avatar.webp" alt="MAAC" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain", background: "white", padding: 2, flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.2, color: "white" }}>MAAC Admin</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>Mangalam Chemicals</div>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <a href="/" target="_blank" style={{ fontSize: 12, color: "#1a4d2e", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}><ExternalLink size={12} /> View Site</a>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#1a4d2e", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>A</div>
+          <button onClick={() => setSidebarOpen(false)} className="admin-sidebar-close" aria-label="Close menu">
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className="admin-nav">
+          {nav.map(item => {
+            const active = isActive(item.href);
+            return (
+              <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)} className="admin-nav-link" data-active={active}>
+                <item.icon size={16} />{item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="admin-sidebar-foot">
+          <a href="/" target="_blank" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "rgba(255,255,255,0.55)", textDecoration: "none", marginBottom: 12 }}>
+            <ExternalLink size={12} /> View Website
+          </a>
+          <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#fca5a5", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+            <LogOut size={14} /> Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <div className="admin-content">
+        <header className="admin-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <button onClick={() => setSidebarOpen(true)} className="admin-hamburger" aria-label="Open menu">
+              <Menu size={22} />
+            </button>
+            <h1 className="admin-header-title">{title || "Dashboard"}</h1>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            <a href="/" target="_blank" className="admin-view-site" style={{ fontSize: 12, color: "#1a4d2e", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+              <ExternalLink size={12} /> <span className="admin-view-site-label">View Site</span>
+            </a>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#1a4d2e", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>A</div>
           </div>
         </header>
-        <main style={{ flex: 1, padding: "24px" }}>{children}</main>
+        <main className="admin-main">{children}</main>
       </div>
+
+      <style>{`
+        .admin-shell {
+          min-height: 100vh;
+          background: #f3f4f6;
+          position: relative;
+        }
+
+        /* Backdrop — mobile only, behind the sidebar */
+        .admin-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 40;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.2s ease;
+        }
+        .admin-backdrop[data-open="true"] {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        /* Sidebar — off-canvas on mobile by default, fixed/visible on desktop */
+        .admin-sidebar {
+          width: 240px;
+          max-width: 82vw;
+          background: linear-gradient(180deg, #0f2d1a 0%, #1a4d2e 100%);
+          color: white;
+          display: flex;
+          flex-direction: column;
+          position: fixed;
+          top: 0;
+          left: 0;
+          height: 100dvh;
+          z-index: 50;
+          transform: translateX(-100%);
+          transition: transform 0.25s ease;
+          box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+        }
+        .admin-sidebar[data-open="true"] { transform: translateX(0); }
+        .admin-sidebar-close { background: none; border: none; color: white; cursor: pointer; padding: 4px; flex-shrink: 0; }
+
+        .admin-sidebar-head {
+          padding: 18px 16px;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        .admin-nav { flex: 1; padding: 10px 8px; overflow-y: auto; }
+        .admin-nav-link {
+          display: flex; align-items: center; gap: 10px;
+          padding: 11px 12px; border-radius: 8px; margin-bottom: 2px;
+          text-decoration: none; font-size: 13.5px; font-weight: 500;
+          background: transparent; color: rgba(255,255,255,0.65);
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .admin-nav-link[data-active="true"] { background: rgba(255,255,255,0.15); color: white; font-weight: 600; }
+        .admin-nav-link:active { background: rgba(255,255,255,0.12); }
+        .admin-sidebar-foot { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+
+        /* Main content area */
+        .admin-content {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          margin-left: 0;
+        }
+        .admin-header {
+          background: white;
+          border-bottom: 1px solid #e5e7eb;
+          padding: 0 14px;
+          height: 56px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          position: sticky;
+          top: 0;
+          z-index: 30;
+          gap: 10px;
+        }
+        .admin-hamburger { background: none; border: none; cursor: pointer; color: #374151; padding: 6px; margin-left: -6px; display: flex; flex-shrink: 0; }
+        .admin-header-title {
+          font-size: 15px; font-weight: 700; color: #111827; margin: 0;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .admin-view-site-label { display: none; }
+        .admin-main { flex: 1; padding: 16px; padding-bottom: 40px; max-width: 100vw; overflow-x: hidden; }
+
+        /* ── Desktop (≥1024px): static sidebar, no overlay/hamburger ── */
+        @media (min-width: 1024px) {
+          .admin-backdrop { display: none; }
+          .admin-sidebar {
+            transform: translateX(0);
+            box-shadow: none;
+            max-width: 240px;
+          }
+          .admin-sidebar-close { display: none; }
+          .admin-content { margin-left: 240px; }
+          .admin-header { padding: 0 24px; height: 60px; }
+          .admin-hamburger { display: none; }
+          .admin-header-title { font-size: 16px; }
+          .admin-view-site-label { display: inline; }
+          .admin-main { padding: 24px; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,0 +1,13 @@
+MAAC WEBSITE — PATCH INSTRUCTIONS
+===================================
+Copy ALL files/folders from this patch into your existing maac-website folder.
+Replace existing files when prompted.
+
+After copying:
+1. Open terminal in maac-website folder
+2. Run: npm run dev
+3. Open: localhost:3000
+
+NEW ADMIN LOGIN:
+  Email:    admin@maac.com
+  Password: Maac@2026

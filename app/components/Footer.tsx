@@ -32,6 +32,13 @@ export default function Footer() {
 
         {/* Col 1 — Company info */}
         <div>
+          <div style={{ background: "white", borderRadius: 12, padding: "8px 14px", display: "inline-flex", marginBottom: 14 }}>
+            <img
+              src="/assets/maac-media/images/maac-logo-navbar.webp"
+              alt="Mangalam Acid and Chemicals Logo"
+              style={{ height: 44, width: "auto", objectFit: "contain", display: "block" }}
+            />
+          </div>
           <p className="text-white font-bold text-base mb-3">Mangalam Acid and Chemicals</p>
           <p className="text-sm text-gray-400 leading-relaxed mb-5">
             Supplier and exporter of industrial, agro, fertilizer, and specialty chemicals from Vapi, Gujarat, India. ISO 9001:2015 &amp; ISO 45001:2018 certified.

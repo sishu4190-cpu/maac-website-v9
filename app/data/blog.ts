@@ -52,7 +52,7 @@ At Mangalam Acid and Chemicals, COA is available for all products on request. Wh
 3. Batch reference (if referencing a specific prior order)
 4. Specific parameters you need tested (e.g., purity min 98%, Fe content max 0.001%)
 
-You can request COA documentation via our contact form or by emailing mangalamacidandchemicals@gmail.com.
+You can request COA documentation via our contact form or by emailing inquiry@mangalamchemicals.com.
 
 ## COA vs MSDS — What is the Difference?
 

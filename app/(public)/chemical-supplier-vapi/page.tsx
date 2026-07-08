@@ -24,7 +24,7 @@ export default function VapiChemicalSupplierPage() {
       addressCountry: 'IN',
     },
     telephone: ['+91-96620-88122', '+91-90818-32790', '+91-95379-70043'],
-    email: 'mangalamacidandchemicals@gmail.com',
+    email: 'info@mangalamchemicals.com',
     url: 'https://mangalamchemicals.com',
     areaServed: ['Vapi', 'Gujarat', 'India'],
     openingHoursSpecification: [{

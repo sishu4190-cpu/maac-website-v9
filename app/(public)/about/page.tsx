@@ -9,8 +9,43 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
+  const aboutSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    name: 'About Mangalam Acid and Chemicals',
+    url: 'https://mangalamchemicals.com/about',
+    mainEntity: {
+      '@type': 'Organization',
+      name: 'Mangalam Acid and Chemicals',
+      legalName: 'Mangalam Acid and Chemicals',
+      foundingLocation: 'Vapi, Gujarat, India',
+      description: 'ISO 9001:2015 and ISO 45001:2018 certified manufacturer, supplier and exporter of industrial, agro, fertilizer and specialty chemicals based in Vapi, Gujarat, India.',
+      url: 'https://mangalamchemicals.com',
+      logo: 'https://mangalamchemicals.com/assets/maac-media/images/maac-logo-full.jpeg',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'PT 209, SH-305, 3rd Floor, Girnar Khushboo Plaza, Vapi INA (INA)',
+        addressLocality: 'Pardi',
+        addressRegion: 'Gujarat',
+        postalCode: '396195',
+        addressCountry: 'IN',
+      },
+      email: 'info@mangalamchemicals.com',
+      telephone: '+91-96620-88122',
+      sameAs: [
+        'https://www.instagram.com/mangalamchemicals',
+        'https://www.facebook.com/share/1GK11G4kCK/',
+        'https://www.linkedin.com/in/ravi-patel-4b51912b2',
+        'https://youtube.com/@mangalamchemicals',
+        'https://www.indiamart.com/mangalam-acid-chemicals/',
+      ],
+    },
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutSchema) }} />
+
       <section style={{ backgroundColor: "#0f2d1a" }} className="py-12">
         <div className="max-w-7xl mx-auto px-4">
           <nav className="text-sm text-gray-400 mb-4">
@@ -70,7 +105,7 @@ export default function AboutPage() {
                       <a href={`tel:${ph.replace(/\s/g,"")}`} className="hover:underline">{ph}</a>
                     </div>
                   ))}
-                  {["mangalamacidandchemicals@gmail.com", "info_maac@yahoo.com"].map(em => (
+                  {["info@mangalamchemicals.com", "inquiry@mangalamchemicals.com"].map(em => (
                     <div key={em} className="flex items-center gap-2">
                       <Mail size={14} />
                       <a href={`mailto:${em}`} className="hover:underline">{em}</a>

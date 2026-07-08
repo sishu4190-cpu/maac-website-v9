@@ -68,18 +68,19 @@ export default function AdminEnquiries() {
     setEditingNote(null);
   };
 
-  const exportCSV = () => {
-    const headers = ["ID", "Name", "Company", "Mobile", "Email", "Product", "Grade", "Quantity", "Location", "Status", "Date"];
+  const exportExcel = async () => {
+    const XLSX = await import("xlsx");
+    const headers = ["ID", "Name", "Company", "Mobile", "Email", "Product", "Grade", "Quantity", "Packaging", "Delivery Location", "Application", "Message", "Status", "Notes", "Date"];
     const rows = filtered.map(e => [
       e.id, e.name, e.company, e.mobile, e.email || "", e.product, e.grade || "",
-      e.quantity, e.deliveryLocation, e.status, new Date(e.createdAt).toLocaleDateString("en-IN"),
+      e.quantity, e.packaging || "", e.deliveryLocation, e.application || "", e.message || "",
+      getStatusStyle(e.status).label, e.notes || "", new Date(e.createdAt).toLocaleString("en-IN"),
     ]);
-    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url;
-    a.download = `MAAC-Enquiries-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 2, 16) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Enquiries");
+    XLSX.writeFile(wb, `MAAC-Enquiries-${new Date().toISOString().split("T")[0]}.xlsx`);
   };
 
   const newCount = enquiries.filter(e => e.status === "new").length;
@@ -116,8 +117,8 @@ export default function AdminEnquiries() {
         <button onClick={load} style={{ padding: "9px 12px", border: "1px solid #e5e7eb", borderRadius: 8, background: "white", cursor: "pointer", display: "flex", alignItems: "center" }}>
           <RefreshCw size={14} style={{ color: "#6b7280" }} />
         </button>
-        <button onClick={exportCSV} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", background: "#f4a228", color: "white", border: "none", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-          <Download size={14} /> Export CSV
+        <button onClick={exportExcel} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", background: "#f4a228", color: "white", border: "none", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          <Download size={14} /> Export Excel
         </button>
       </div>
 

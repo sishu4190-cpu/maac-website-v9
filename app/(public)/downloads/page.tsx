@@ -121,8 +121,18 @@ export default function DownloadsPage() {
       item.name === 'Product Catalogue 2025' ? { ...item, file: catalogueFile } : item
     ),
   }));
+  const downloadsSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Downloads — Mangalam Acid and Chemicals',
+    description: 'Product catalogue, ISO certificates, MSME certificate, IEC certificate and IndiaMART TrustSEAL documents.',
+    url: 'https://mangalamchemicals.com/downloads',
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(downloadsSchema) }} />
+
       {/* Hero */}
       <section style={{ background: 'linear-gradient(135deg, #0f2d1a 0%, #1a4d2e 100%)' }} className="molecule-bg text-white py-20">
         <div className="max-w-7xl mx-auto px-4">

@@ -14,8 +14,35 @@ export default function GujaratChemicalSupplierPage() {
     'Morbi', 'Junagadh', 'Gandhinagar', 'Mehsana', 'Kutch / Bhuj'
   ];
 
+  const gujaratSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: 'Mangalam Acid and Chemicals',
+    description: 'Gujarat-based industrial and agro chemical supplier. Bulk supply of sulphates, fluorides, EDTA chelated products, acids, pharmaceutical chemicals and NPK fertilizers across Gujarat.',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'PT 209, SH-305, 3rd Floor, Girnar Khushboo Plaza, Vapi INA (INA)',
+      addressLocality: 'Pardi',
+      addressRegion: 'Gujarat',
+      postalCode: '396195',
+      addressCountry: 'IN',
+    },
+    telephone: ['+91-96620-88122', '+91-90818-32790', '+91-95379-70043'],
+    email: 'info@mangalamchemicals.com',
+    url: 'https://mangalamchemicals.com/chemical-supplier-gujarat',
+    areaServed: gujaratCities.concat('Gujarat', 'India'),
+    openingHoursSpecification: [{
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      opens: '09:00',
+      closes: '19:00',
+    }],
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(gujaratSchema) }} />
+
       {/* Hero */}
       <section className="bg-deepGreen text-white py-16 molecule-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

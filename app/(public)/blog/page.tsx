@@ -15,8 +15,24 @@ const categories = ['All', 'Quality & Documentation', 'Procurement Guidance', 'P
 export default function BlogPage() {
   const sortedPosts = [...blogPosts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  const blogSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: 'Mangalam Acid and Chemicals — Knowledge Centre',
+    description: 'Chemical procurement guides, product specifications, COA explained, MSDS guidance, and sourcing best practices.',
+    url: 'https://mangalamchemicals.com/blog',
+    blogPost: sortedPosts.slice(0, 20).map((p) => ({
+      '@type': 'BlogPosting',
+      headline: p.title,
+      datePublished: p.date,
+      url: `https://mangalamchemicals.com/blog/${p.slug}`,
+    })),
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }} />
+
       {/* Hero */}
       <section style={{ background: "linear-gradient(135deg, rgba(15,45,26,0.92) 0%, rgba(26,77,46,0.88) 100%)", backgroundImage: "url('/assets/maac-media/images/categories/blog-hero.png')", backgroundSize: "cover", backgroundPosition: "center", backgroundBlendMode: "multiply" }} className="text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

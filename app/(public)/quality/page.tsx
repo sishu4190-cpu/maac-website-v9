@@ -1,21 +1,9 @@
 import type { Metadata } from 'next';
 import { Shield, FileCheck, Award, Microscope, ClipboardCheck, Download, Phone, ChevronRight, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { getActiveCertifications } from '@/app/data/certifications';
 
 export const dynamic = 'force-dynamic';
-
-function getAdminCertificates() {
-  try {
-    if (typeof window === 'undefined') {
-      const { readData } = require('@/app/lib/dataStore');
-      const data = readData();
-      if (data.certificateOverrides && data.certificateOverrides.length > 0) {
-        return data.certificateOverrides.sort((a: { order: number }, b: { order: number }) => a.order - b.order);
-      }
-    }
-  } catch {}
-  return null;
-}
 
 export const metadata: Metadata = {
   title: 'Quality & Documentation | Mangalam Acid and Chemicals',
@@ -23,71 +11,7 @@ export const metadata: Metadata = {
   keywords: 'ISO certified chemical supplier, COA chemical supplier Vapi, quality chemical Gujarat',
 };
 
-const certifications = [
-  {
-    name: 'GST Registration Certificate',
-    code: '24ABPFM7919L1ZK',
-    desc: 'Goods and Services Tax Registration Certificate issued by Government of India. Regular registration since 18 January 2021.',
-    icon: '🇮🇳',
-    file: '/assets/maac-media/certificates/GST-Certificate.pdf',
-    validUntil: 'Permanent',
-    issued: '17 Jun 2026',
-  },
-  {
-    name: 'ISO 9001:2015',
-    code: 'IN59785A',
-    desc: 'Quality Management System certification ensuring consistent product quality, process control, and customer satisfaction.',
-    icon: '🏆',
-    file: '/assets/maac-media/certificates/ISO-9001-2015.pdf',
-    validUntil: '11 May 2028',
-    issued: '12 May 2025',
-  },
-  {
-    name: 'ISO 45001:2018',
-    code: 'IN59785C-1',
-    desc: 'Occupational Health & Safety Management System certification for safe handling and storage of industrial chemicals.',
-    icon: '🛡️',
-    file: '/assets/maac-media/certificates/ISO-45001-2018.pdf',
-    validUntil: '11 May 2028',
-    issued: '12 May 2025',
-  },
-  {
-    name: 'MSME UDYAM',
-    code: 'GJ-25-0006759',
-    desc: 'Registered under Ministry of Micro, Small and Medium Enterprises, Government of India. Manufacturing enterprise.',
-    icon: '🏛️',
-    file: '/assets/maac-media/certificates/MSME-UDYAM.pdf',
-    validUntil: 'Permanent',
-    issued: '01 Mar 2021',
-  },
-  {
-    name: 'IEC — Import/Export Code',
-    code: 'ABPFM7919L',
-    desc: 'Importer-Exporter Code issued by DGFT, Ministry of Commerce & Industry, Government of India.',
-    icon: '🌏',
-    file: '/assets/maac-media/certificates/IEC-certificate.pdf',
-    validUntil: 'Permanent',
-    issued: '31 Mar 2023',
-  },
-  {
-    name: 'D&B DUNS',
-    code: '813884357',
-    desc: 'Dun & Bradstreet registered business identity number — used for global procurement and trade verification.',
-    icon: '✅',
-    file: null,
-    validUntil: 'Active',
-    issued: 'Registered',
-  },
-  {
-    name: 'IndiaMART TrustSEAL',
-    code: 'Certified July 2024',
-    desc: 'IndiaMart TrustSEAL verified supplier with authenticated business credentials and buyer reviews.',
-    icon: '🔏',
-    file: '/assets/maac-media/certificates/IndiaMART-TrustSEAL.pdf',
-    validUntil: 'Active',
-    issued: 'July 2024',
-  },
-];
+
 
 const qualityPoints = [
   { icon: Microscope, title: 'Product Testing', desc: 'Each batch tested for purity, assay, moisture content, and grade-specific parameters before dispatch.' },
@@ -102,15 +26,30 @@ const faq = [
   { q: 'What is a Certificate of Analysis (COA)?', a: 'A COA is a document issued by a quality control department that confirms a product meets its specification. It includes batch number, test parameters, test results, and the date of analysis. Mangalam Acid and Chemicals provides COA on request for all products.' },
   { q: 'What grades of chemicals do you supply?', a: 'We supply chemicals in multiple grades including Industrial Grade, Technical Grade, Agricultural/Fertilizer Grade, and Pharmaceutical Grade (USP). Each grade is supplied with the appropriate documentation. Specify the required grade clearly when placing your enquiry.' },
   { q: 'How do your ISO certifications benefit buyers?', a: 'ISO 9001:2015 certification ensures our quality management processes are consistently applied, reducing the risk of receiving off-spec material. ISO 45001:2018 ensures safe handling practices are followed. Buyers in regulated industries often require ISO-certified suppliers.' },
-  { q: 'How do I request a COA or product documentation?', a: 'Send your product name, grade, and batch requirement via WhatsApp at +91 96620 88122 or email mangalamacidandchemicals@gmail.com. We typically respond within the same business day.' },
+  { q: 'How do I request a COA or product documentation?', a: null },
   { q: 'Can you supply chemicals that require export documentation?', a: 'Yes. We hold a valid IEC (Import-Export Code: ABPFM7919L) and can supply chemicals for export. Contact us with your product and destination country for available documentation and compliance requirements.' },
 ];
 
 export default function QualityPage() {
-  const adminCerts = getAdminCertificates();
-  const activeCertifications = adminCerts || certifications;
+  const activeCertifications = getActiveCertifications();
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faq.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.a ?? 'Send your product name, grade, and batch requirement via WhatsApp at +91 96620 88122 or email inquiry@mangalamchemicals.com. We typically respond within the same business day.',
+      },
+    })),
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
       {/* ── Hero ──────────────────────────────────────────── */}
       <section style={{ background: 'linear-gradient(135deg, #0f2d1a 0%, #1a4d2e 100%)' }} className="molecule-bg text-white py-20">
         <div className="max-w-7xl mx-auto px-4">
@@ -141,32 +80,36 @@ export default function QualityPage() {
             <p className="section-subtitle">Independent verification of our quality standards, business credentials, and trade compliance.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-            {activeCertifications.map((cert: {id: string; name: string; code: string; desc: string; icon: string; file: string | null; validUntil: string; issued: string}) => (
-              <div key={cert.name} className="cert-card reveal">
-                <div className="flex items-start gap-3 mb-4">
-                  <span style={{ fontSize: 32 }}>{cert.icon}</span>
-                  <div>
-                    <h3 style={{ fontWeight: 700, color: '#1a4d2e', fontSize: '1rem', lineHeight: 1.3 }}>{cert.name}</h3>
-                    <code style={{ fontSize: 11, color: '#6b7280', background: '#f3f4f6', padding: '2px 8px', borderRadius: 6 }}>{cert.code}</code>
+            {activeCertifications.map((cert: {id: string; name: string; code: string; desc: string; icon: string; file: string | null; image?: string | null; validUntil: string; issued: string}) => (
+              <Link key={cert.id || cert.name} href={`/quality/${cert.id}`} className="cert-card reveal card-hover" style={{ display: 'block', textDecoration: 'none', color: 'inherit', overflow: 'hidden', padding: 0 }}>
+                {/* Certificate photo/image — shown directly, no need to download */}
+                <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', background: '#f3f4f6', overflow: 'hidden' }}>
+                  {cert.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={cert.image} alt={cert.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>{cert.icon}</div>
+                  )}
+                  <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(15,45,26,0.85)', color: 'white', fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    View Details <ChevronRight size={12} />
                   </div>
                 </div>
-                <p style={{ fontSize: 13.5, color: '#6b7280', lineHeight: 1.6, marginBottom: 16 }}>{cert.desc}</p>
-                <div className="flex items-center gap-3 text-xs" style={{ color: '#9ca3af', marginBottom: 14 }}>
-                  <span>Issued: <strong style={{ color: '#374151' }}>{cert.issued}</strong></span>
-                  <span>·</span>
-                  <span>Valid: <strong style={{ color: '#374151' }}>{cert.validUntil}</strong></span>
-                </div>
-                {cert.file ? (
-                  <a href={cert.file} download className="btn-outline-green text-sm py-2 px-5 w-full justify-center" style={{ display: 'flex' }}>
-                    <Download size={14} /> Download Certificate
-                  </a>
-                ) : (
-                  <div style={{ fontSize: 12, color: '#9ca3af', padding: '8px 0', borderTop: '1px solid #f3f4f6' }}>
-                    <CheckCircle size={13} style={{ color: '#4caf50', display: 'inline', marginRight: 6 }} />
-                    Verifiable online via D&B portal
+                <div style={{ padding: 20 }}>
+                  <div className="flex items-start gap-3 mb-3">
+                    <span style={{ fontSize: 26 }}>{cert.icon}</span>
+                    <div>
+                      <h3 style={{ fontWeight: 700, color: '#1a4d2e', fontSize: '1rem', lineHeight: 1.3 }}>{cert.name}</h3>
+                      <code style={{ fontSize: 11, color: '#6b7280', background: '#f3f4f6', padding: '2px 8px', borderRadius: 6 }}>{cert.code}</code>
+                    </div>
                   </div>
-                )}
-              </div>
+                  <p style={{ fontSize: 13.5, color: '#6b7280', lineHeight: 1.6, marginBottom: 14 }}>{cert.desc}</p>
+                  <div className="flex items-center gap-3 text-xs" style={{ color: '#9ca3af' }}>
+                    <span>Issued: <strong style={{ color: '#374151' }}>{cert.issued}</strong></span>
+                    <span>·</span>
+                    <span>Valid: <strong style={{ color: '#374151' }}>{cert.validUntil}</strong></span>
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -255,13 +198,13 @@ export default function QualityPage() {
                       <div style={{ fontSize: 12, opacity: 0.85 }}>Fastest response channel</div>
                     </div>
                   </a>
-                  <a href="mailto:info_maac@yahoo.com"
+                  <a href="mailto:inquiry@mangalamchemicals.com"
                     className="flex items-center gap-3 p-4 rounded-xl"
                     style={{ background: 'rgba(255,255,255,0.08)', color: 'white', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.15)' }}
                   >
                     <span style={{ fontSize: 20 }}>✉️</span>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>info_maac@yahoo.com</div>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>inquiry@mangalamchemicals.com</div>
                       <div style={{ fontSize: 11, opacity: 0.7 }}>Email for formal requests</div>
                     </div>
                   </a>
@@ -288,7 +231,15 @@ export default function QualityPage() {
                   <ChevronRight size={18} style={{ flexShrink: 0, color: '#f4a228', transform: 'rotate(0deg)', transition: 'transform 0.3s' }} />
                 </summary>
                 <div className="px-5 pb-5" style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7, borderTop: '1px solid #f3f4f6', paddingTop: 12 }}>
-                  {item.a}
+                  {item.a ?? (
+                    <>
+                      Send your product name, grade, and batch requirement via WhatsApp at{' '}
+                      <a href="https://wa.me/919662088122?text=Hello%2C%20I%20need%20documentation%20for%20a%20chemical%20product." target="_blank" rel="noopener noreferrer" style={{ color: '#1a4d2e', fontWeight: 600, textDecoration: 'underline' }}>+91 96620 88122</a>
+                      {' '}or email{' '}
+                      <a href="mailto:inquiry@mangalamchemicals.com" style={{ color: '#1a4d2e', fontWeight: 600, textDecoration: 'underline' }}>inquiry@mangalamchemicals.com</a>
+                      . We typically respond within the same business day.
+                    </>
+                  )}
                 </div>
               </details>
             ))}

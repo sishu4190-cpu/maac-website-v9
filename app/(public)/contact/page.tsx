@@ -60,8 +60,34 @@ export default function ContactPage() {
     setLoading(false);
   };
 
+  const contactSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ContactPage',
+    name: 'Contact Mangalam Acid and Chemicals',
+    url: 'https://mangalamchemicals.com/contact',
+    mainEntity: {
+      '@type': 'Organization',
+      name: 'Mangalam Acid and Chemicals',
+      url: 'https://mangalamchemicals.com',
+      contactPoint: [
+        { '@type': 'ContactPoint', contactType: 'sales', telephone: '+91-96620-88122', email: 'inquiry@mangalamchemicals.com', areaServed: 'IN', availableLanguage: ['en', 'hi', 'gu'] },
+        { '@type': 'ContactPoint', contactType: 'customer support', telephone: '+91-90818-32790', email: 'info@mangalamchemicals.com', areaServed: 'IN' },
+      ],
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'PT 209, SH-305, 3rd Floor, Girnar Khushboo Plaza, Vapi INA (INA)',
+        addressLocality: 'Pardi',
+        addressRegion: 'Gujarat',
+        postalCode: '396195',
+        addressCountry: 'IN',
+      },
+    },
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(contactSchema) }} />
+
       {/* Hero */}
       <section style={{ background: "linear-gradient(135deg, #0f2d1a 0%, #1a4d2e 100%)" }} className="molecule-bg text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -116,7 +142,7 @@ export default function ContactPage() {
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Email Addresses</h3>
               <div className="space-y-1">
-                {['mangalamacidandchemicals@gmail.com', 'info_maac@yahoo.com'].map(em => (
+                {['info@mangalamchemicals.com', 'inquiry@mangalamchemicals.com'].map(em => (
                   <a key={em} href={`mailto:${em}`}
                     className="block text-xs font-medium transition-colors break-all" style={{ color: "#1a4d2e" }}>
                     {em}

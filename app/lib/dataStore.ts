@@ -90,9 +90,33 @@ export interface CertificateData {
   desc: string;
   icon: string;
   file: string | null;
+  image: string | null;
   validUntil: string;
   issued: string;
   order: number;
+}
+
+export interface ActivityLogEntry {
+  id: string;
+  section: string;
+  label: string;
+  detail: string;
+  timestamp: string; // ISO string
+}
+
+export interface GalleryImage {
+  id: string;
+  url: string;
+  caption?: string;
+}
+
+export interface GalleryCategory {
+  id: 'office' | 'warehouse' | 'factory' | 'events' | 'import-export';
+  name: string;
+  tagline: string;
+  cover: string | null;
+  images: GalleryImage[];
+  comingSoon?: boolean;
 }
 
 export interface AppData {
@@ -106,16 +130,43 @@ export interface AppData {
   coaFiles: Record<string, string>;
   productOverrides: Record<string, ProductOverride>;
   certificateOverrides: CertificateData[] | null;
+  galleryCategories: GalleryCategory[];
   catalogueFile: string | null;
+  activityLog: ActivityLogEntry[];
   adminPassword?: string;
   otpData?: { otp: string; expires: number; used: boolean } | null;
+}
+
+export function logActivity(data: AppData, section: string, label: string, detail: string): void {
+  if (!Array.isArray(data.activityLog)) data.activityLog = [];
+  data.activityLog.unshift({
+    id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    section,
+    label,
+    detail,
+    timestamp: new Date().toISOString(),
+  });
+  if (data.activityLog.length > 500) data.activityLog = data.activityLog.slice(0, 500);
+}
+
+function mergeGalleryCategories(defaultCats: GalleryCategory[], saved?: GalleryCategory[] | null): GalleryCategory[] {
+  if (!saved || !Array.isArray(saved) || saved.length === 0) return defaultCats;
+  return defaultCats.map((def) => {
+    const match = saved.find((s) => s.id === def.id);
+    if (!match) return def;
+    return {
+      ...def,
+      ...match,
+      images: Array.isArray(match.images) ? match.images : [],
+    };
+  });
 }
 
 export function getDefaultData(): AppData {
   return {
     contact: {
       phones: ['+91 96620 88122', '+91 90818 32790', '+91 95379 70043'],
-      emails: ['mangalamacidandchemicals@gmail.com', 'info_maac@yahoo.com'],
+      emails: ['info@mangalamchemicals.com', 'inquiry@mangalamchemicals.com'],
       address: 'PT 209, SH-305, 3rd Floor, Girnar Khushboo Plaza, Vapi INA (INA), Pardi, Valsad – 396195, Gujarat, India',
       businessHours: 'Monday – Saturday, 9:00 AM – 7:00 PM IST',
       whatsapp: '+91 96620 88122',
@@ -139,7 +190,15 @@ export function getDefaultData(): AppData {
     coaFiles: {},
     productOverrides: {},
     certificateOverrides: null,
+    galleryCategories: [
+      { id: 'office', name: 'Office', tagline: 'Our workspace in Vapi, Gujarat', cover: '/assets/maac-media/images/office-cover.jpg', images: [] },
+      { id: 'warehouse', name: 'Warehouse', tagline: 'Storage & handling facility', cover: null, images: [] },
+      { id: 'factory', name: 'Factory', tagline: 'Manufacturing & production', cover: null, images: [] },
+      { id: 'events', name: 'Events', tagline: 'Training sessions & trade expos', cover: '/assets/maac-media/images/events-cover.jpg', images: [] },
+      { id: 'import-export', name: 'Import / Export', tagline: 'Global trade & logistics', cover: null, images: [], comingSoon: true },
+    ],
     catalogueFile: null,
+    activityLog: [],
     adminPassword: undefined,
     otpData: null,
   };
@@ -162,7 +221,9 @@ export function readData(): AppData {
         coaFiles: parsed.coaFiles || {},
         productOverrides: parsed.productOverrides || {},
         certificateOverrides: parsed.certificateOverrides || null,
+        galleryCategories: mergeGalleryCategories(defaults.galleryCategories, parsed.galleryCategories),
         catalogueFile: parsed.catalogueFile || null,
+        activityLog: Array.isArray(parsed.activityLog) ? parsed.activityLog.slice(0, 500) : [],
         adminPassword: parsed.adminPassword,
         otpData: parsed.otpData || null,
       };

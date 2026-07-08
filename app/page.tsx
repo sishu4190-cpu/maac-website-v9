@@ -116,7 +116,7 @@ export default function Home() {
         {/* Hero background image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/assets/maac-media/images/hero-bg.jpg"
+          src="/assets/maac-media/images/hero-office-gate.jpg"
           alt=""
           aria-hidden="true"
           style={{

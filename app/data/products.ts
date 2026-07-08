@@ -7,7 +7,7 @@ export const companyInfo = {
   address:
     "PT 209, SH-305, 3rd Floor, Girnar Khushboo Plaza, Vapi INA (INA), Pardi, Valsad - 396195, Gujarat, India",
   phones: ["+91 96620 88122", "+91 90818 32790", "+91 95379 70043"],
-  emails: ["mangalamacidandchemicals@gmail.com", "info_maac@yahoo.com"],
+  emails: ["info@mangalamchemicals.com", "inquiry@mangalamchemicals.com"],
   website: "https://mangalamchemicals.com",
   social: {
     instagram: "https://www.instagram.com/mangalamchemicals",

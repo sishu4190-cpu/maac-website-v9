@@ -1,11 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readData, writeData, Enquiry } from '@/app/lib/dataStore';
+import { readData, writeData, logActivity, Enquiry } from '@/app/lib/dataStore';
 
 function isAuthorized(req: NextRequest): boolean {
   const token = req.headers.get('x-admin-token') || '';
   const data = readData();
   const adminPass = data.adminPassword || process.env.ADMIN_PASSWORD || 'MAAC@2026#Admin';
   return token === adminPass || token === 'maac-admin-dev' || (token.length > 8);
+}
+
+// Builds a friendly {label, detail} pair for the Activity Log, based on the
+// section being written and its payload. Falls back to a generic label for
+// any section not explicitly mapped, so new sections never go unlogged.
+function describeAction(section: string, payload: Record<string, unknown> = {}): { label: string; detail: string } {
+  const s = (v: unknown, max = 80) => (typeof v === 'string' ? (v.length > max ? v.slice(0, max) + '…' : v) : '');
+  switch (section) {
+    case 'contact': return { label: 'Updated contact details', detail: 'Phones, emails, address or social links changed' };
+    case 'settings': return { label: 'Updated site settings', detail: s(payload.siteName) || 'Site name / meta settings changed' };
+    case 'enquiry_status': return { label: 'Updated enquiry status', detail: `Enquiry ${s(payload.id, 30)} → "${s(payload.status)}"` };
+    case 'enquiry_notes': return { label: 'Added enquiry note', detail: `Enquiry ${s(payload.id, 30)}` };
+    case 'enquiry_delete': return { label: 'Deleted an enquiry', detail: `Enquiry ${s(payload.id, 30)}` };
+    case 'blog_add': return { label: 'Published new blog post', detail: s(payload.title) };
+    case 'blog_update': return { label: 'Edited blog post', detail: s(payload.title) || s(payload.id, 30) };
+    case 'blog_delete': return { label: 'Deleted blog post', detail: s(payload.id, 30) };
+    case 'blog_toggle_publish': return { label: 'Toggled blog post visibility', detail: s(payload.id, 30) };
+    case 'product_add': return { label: 'Added new product', detail: s(payload.name) };
+    case 'product_update': return { label: 'Edited product', detail: s(payload.name) || s(payload.id, 30) };
+    case 'product_delete': return { label: 'Deleted product', detail: s(payload.id, 30) };
+    case 'product_toggle_hide': return { label: 'Toggled product visibility', detail: s(payload.id, 30) };
+    case 'product_override_save': return { label: 'Edited product details', detail: s(payload.productId, 40) };
+    case 'product_override_reset': return { label: 'Reset product to default', detail: s(payload.productId, 40) };
+    case 'category_add': return { label: 'Added product category', detail: s(payload.name) };
+    case 'category_delete': return { label: 'Deleted product category', detail: s(payload.id, 30) };
+    case 'coa_map': return { label: 'Attached COA document', detail: s(payload.productId, 40) };
+    case 'coa_unmap': return { label: 'Removed COA document', detail: s(payload.productId, 40) };
+    case 'certificates_save': return { label: 'Updated certificates', detail: Array.isArray(payload.certificates) ? `${(payload.certificates as unknown[]).length} certificate(s) saved` : '' };
+    case 'certificates_reset': return { label: 'Reset certificates to default', detail: '' };
+    case 'gallery_cover_save': return { label: 'Changed gallery cover image', detail: `Category: ${s(payload.categoryId, 30)}` };
+    case 'gallery_info_save': return { label: 'Edited gallery category info', detail: `Category: ${s(payload.categoryId, 30)}` };
+    case 'gallery_image_add': return { label: 'Uploaded gallery photo', detail: `Category: ${s(payload.categoryId, 30)}` };
+    case 'gallery_image_update': return { label: 'Edited gallery photo caption', detail: `Category: ${s(payload.categoryId, 30)}` };
+    case 'gallery_image_delete': return { label: 'Deleted gallery photo', detail: `Category: ${s(payload.categoryId, 30)}` };
+    case 'catalogue_update': return { label: 'Updated catalogue PDF', detail: '' };
+    case 'catalogue_reset': return { label: 'Removed catalogue PDF', detail: '' };
+    case 'password_change': return { label: 'Changed admin password', detail: 'Via Settings → Security' };
+    default: return { label: `Updated "${section}"`, detail: '' };
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -109,6 +148,38 @@ export async function POST(req: NextRequest) {
         data.certificateOverrides = null;
         break;
 
+      case 'gallery_cover_save': {
+        const cat = data.galleryCategories.find((c) => c.id === payload.categoryId);
+        if (cat) cat.cover = payload.cover;
+        break;
+      }
+      case 'gallery_info_save': {
+        const cat = data.galleryCategories.find((c) => c.id === payload.categoryId);
+        if (cat) {
+          if (payload.name !== undefined) cat.name = payload.name;
+          if (payload.tagline !== undefined) cat.tagline = payload.tagline;
+        }
+        break;
+      }
+      case 'gallery_image_add': {
+        const cat = data.galleryCategories.find((c) => c.id === payload.categoryId);
+        if (cat) cat.images.push({ id: payload.image.id || `img-${Date.now()}`, url: payload.image.url, caption: payload.image.caption || '' });
+        break;
+      }
+      case 'gallery_image_update': {
+        const cat = data.galleryCategories.find((c) => c.id === payload.categoryId);
+        if (cat) {
+          const img = cat.images.find((i) => i.id === payload.imageId);
+          if (img) img.caption = payload.caption;
+        }
+        break;
+      }
+      case 'gallery_image_delete': {
+        const cat = data.galleryCategories.find((c) => c.id === payload.categoryId);
+        if (cat) cat.images = cat.images.filter((i) => i.id !== payload.imageId);
+        break;
+      }
+
       case 'catalogue_update':
         data.catalogueFile = payload.file;
         break;
@@ -133,21 +204,49 @@ export async function POST(req: NextRequest) {
         if (otpData.otp !== payload.otp) return NextResponse.json({ error: 'Invalid OTP.' }, { status: 400 });
         data.otpData = { ...otpData, used: true };
         data.adminPassword = payload.newPassword;
+        logActivity(data, 'password_reset_otp_verify', 'Reset admin password', 'Via Forgot Password → Email OTP');
         writeData(data);
         return NextResponse.json({ success: true, message: 'Password reset successfully.' });
       }
 
       case 'password_otp_generate': {
+        const existing = data.otpData;
+        if (existing && !existing.used && Date.now() < existing.expires - 9 * 60 * 1000) {
+          // A code was generated less than 60s ago — don't spam a fresh email.
+          return NextResponse.json({ success: true, message: 'A code was already sent recently. Please check your inbox, or wait a minute before requesting another.' });
+        }
+
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         data.otpData = { otp, expires: Date.now() + 10 * 60 * 1000, used: false };
         writeData(data);
-        console.log(`[MAAC OTP] Generated OTP: ${otp} (valid 10 min)`);
-        return NextResponse.json({ success: true, otp, message: 'OTP generated. Check console log or email/WhatsApp if configured.' });
+
+        try {
+          const { sendOtpEmail } = await import('@/app/lib/email');
+          const result = await sendOtpEmail(otp);
+          if (!result.success) {
+            console.warn('[MAAC Admin OTP] Email send failed:', result.error);
+            // Fall back to server console only when email genuinely cannot be sent
+            // (e.g. RESEND_API_KEY missing in local dev) — never expose the OTP
+            // to the client/browser.
+            console.log(`[MAAC OTP — DEV FALLBACK ONLY] Code: ${otp} (valid 10 min)`);
+            return NextResponse.json({
+              success: true,
+              message: 'Could not send email (check server email configuration). For local testing, the OTP has been printed to the server console instead.',
+            });
+          }
+        } catch (e) {
+          console.warn('[MAAC Admin OTP] Email module error:', e);
+        }
+
+        return NextResponse.json({ success: true, message: 'OTP sent to the registered admin email. Check your inbox (and spam folder).' });
       }
 
       default:
         return NextResponse.json({ error: `Unknown section: ${section}` }, { status: 400 });
     }
+
+    const { label, detail } = describeAction(section, payload);
+    logActivity(data, section, label, detail);
 
     const saved = writeData(data);
     return NextResponse.json({ success: true, saved, data }, { headers: { 'Cache-Control': 'no-store' } });

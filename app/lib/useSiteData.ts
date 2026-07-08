@@ -28,7 +28,7 @@ interface SiteData {
 const defaults: SiteData = {
   contact: {
     phones: ['+91 96620 88122', '+91 90818 32790', '+91 95379 70043'],
-    emails: ['mangalamacidandchemicals@gmail.com', 'info_maac@yahoo.com'],
+    emails: ['info@mangalamchemicals.com', 'inquiry@mangalamchemicals.com'],
     address: 'PT 209, SH-305, 3rd Floor, Girnar Khushboo Plaza, Vapi INA (INA), Pardi, Valsad – 396195, Gujarat, India',
     businessHours: 'Monday – Saturday, 9:00 AM – 7:00 PM IST',
     whatsapp: '+91 96620 88122',

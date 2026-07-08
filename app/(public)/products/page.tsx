@@ -10,8 +10,28 @@ export const metadata: Metadata = {
 };
 
 export default function ProductsPage() {
+  const productsSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Products — Mangalam Acid and Chemicals',
+    description: 'Over 80 industrial and agro chemicals across 6 categories: sulphates, EDTA chelates, fluoride compounds, acids, NPK fertilizers, pharmaceutical chemicals.',
+    url: 'https://mangalamchemicals.com/products',
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: categories.length,
+      itemListElement: categories.map((cat, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: cat.name,
+        url: `https://mangalamchemicals.com/products/${cat.slug}`,
+      })),
+    },
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productsSchema) }} />
+
       <section style={{ backgroundColor: "#0f2d1a" }} className="py-12">
         <div className="max-w-7xl mx-auto px-4">
           <nav className="text-sm text-gray-400 mb-4">
@@ -72,6 +92,10 @@ export default function ProductsPage() {
             <Link href="/contact#enquiry" className="btn-primary">Send Product Enquiry</Link>
             <Link href="/downloads" className="btn-secondary">Download Full Catalogue</Link>
           </div>
+          <p className="mt-5 text-sm" style={{ color: "rgba(255,255,255,0.7)" }}>
+            Or email our sales team directly at{" "}
+            <a href="mailto:sales@mangalamchemicals.com" style={{ color: "#f4a228", fontWeight: 600, textDecoration: "underline" }}>sales@mangalamchemicals.com</a>
+          </p>
         </div>
       </section>
     </>
