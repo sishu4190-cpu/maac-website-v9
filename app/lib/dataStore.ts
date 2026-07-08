@@ -6,10 +6,13 @@ const DATA_FILE = join(process.cwd(), 'admin-data.json');
 const BLOB_DATA_PATH = 'data/admin-data.json';
 
 // On Vercel, the local filesystem is read-only/ephemeral — writes vanish
-// between requests. When a Blob store is connected (BLOB_READ_WRITE_TOKEN
-// present), we persist there instead. Locally (npm run dev), we keep using
-// the plain JSON file so no cloud setup is required to develop.
-const useBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+// between requests. When a Blob store is connected, we persist there
+// instead. Locally (npm run dev), we keep using the plain JSON file so no
+// cloud setup is required to develop.
+// Vercel now connects Blob stores via short-lived OIDC tokens by default —
+// that mode sets BLOB_STORE_ID (and VERCEL_OIDC_TOKEN at runtime) but does
+// NOT set the older BLOB_READ_WRITE_TOKEN, so we must check for either.
+const useBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 
 export interface ContactData {
   phones: string[];

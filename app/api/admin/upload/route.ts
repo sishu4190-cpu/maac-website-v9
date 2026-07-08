@@ -11,7 +11,9 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
   return token === adminPass || token === 'maac-admin-dev' || token.length > 8;
 }
 
-const useBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+// Vercel's newer OIDC-based Blob connection sets BLOB_STORE_ID but not the
+// older BLOB_READ_WRITE_TOKEN, so check for either.
+const useBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 
 export async function POST(req: NextRequest) {
   if (!(await isAuthorized(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

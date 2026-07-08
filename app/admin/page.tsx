@@ -14,10 +14,23 @@ export default function AdminDashboard() {
   const [data, setData] = useState<{ enquiries: { id: string; name: string; company: string; product: string; qty: string; location: string; status: string; time: string }[] } | null>(null);
   const [showAlert, setShowAlert] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [storageStatus, setStorageStatus] = useState<{ connected: boolean; mode: string; message: string } | null>(null);
+  const [checkingStorage, setCheckingStorage] = useState(true);
 
   useEffect(() => {
     adminGet().then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
   }, []);
+
+  const checkStorage = () => {
+    setCheckingStorage(true);
+    const token = sessionStorage.getItem("maac_admin_token") || "maac-admin-dev";
+    fetch("/api/admin/storage-status", { headers: { "x-admin-token": token } })
+      .then(r => r.json())
+      .then(d => { setStorageStatus(d); setCheckingStorage(false); })
+      .catch(() => { setCheckingStorage(false); });
+  };
+
+  useEffect(() => { checkStorage(); }, []);
 
   const enquiries = data?.enquiries || [];
   const newCount = enquiries.filter(e => e.status === "new").length;
@@ -44,6 +57,28 @@ export default function AdminDashboard() {
 
   return (
     <AdminShell title="Dashboard">
+      {/* Storage Connection Status — critical, shown first */}
+      {!checkingStorage && storageStatus && (
+        <div style={{
+          background: storageStatus.connected ? "#f0fdf4" : "#fef2f2",
+          border: `1px solid ${storageStatus.connected ? "#86efac" : "#fca5a5"}`,
+          borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16,
+        }}>
+          {storageStatus.connected
+            ? <CheckCircle size={18} style={{ color: "#15803d", flexShrink: 0, marginTop: 1 }} />
+            : <AlertTriangle size={18} style={{ color: "#dc2626", flexShrink: 0, marginTop: 1 }} />}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontWeight: 700, fontSize: 13, color: storageStatus.connected ? "#15803d" : "#b91c1c", margin: 0 }}>
+              {storageStatus.connected ? "Storage Connected — changes will save permanently" : "Storage NOT Connected — changes will NOT save permanently"}
+            </p>
+            <p style={{ fontSize: 12, color: storageStatus.connected ? "#166534" : "#991b1b", margin: "2px 0 0" }}>{storageStatus.message}</p>
+          </div>
+          <button onClick={checkStorage} style={{ fontSize: 12, fontWeight: 700, color: storageStatus.connected ? "#15803d" : "#dc2626", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
+            Re-check
+          </button>
+        </div>
+      )}
+
       {/* Password Alert */}
       {showAlert && (
         <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 24 }}>

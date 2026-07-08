@@ -253,6 +253,12 @@ export async function POST(req: NextRequest) {
     logActivity(data, section, label, detail);
 
     const saved = await writeData(data);
+    if (!saved) {
+      return NextResponse.json(
+        { success: false, error: 'Could not save — storage is not reachable. Please try again or contact support.' },
+        { status: 500, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
     return NextResponse.json({ success: true, saved, data }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     console.error('[admin/data POST]', e);

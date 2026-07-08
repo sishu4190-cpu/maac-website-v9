@@ -202,6 +202,31 @@ export default function AdminShell({ children, title }: { children: ReactNode; t
         .admin-view-site-label { display: none; }
         .admin-main { flex: 1; padding: 16px; padding-bottom: 40px; max-width: 100vw; overflow-x: hidden; }
 
+        /* ── Reusable responsive helpers for all admin pages ── */
+        /* 2-column "content + sidebar" layout — stacks on mobile/tablet */
+        .admin-2col {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        /* Horizontal scroll wrapper for wide tables so they scroll instead
+           of squeezing/breaking the page layout on narrow screens */
+        .admin-table-scroll {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        /* Toolbar rows (search + filters + buttons) wrap onto multiple
+           lines on narrow screens instead of overflowing */
+        .admin-toolbar {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          align-items: center;
+        }
+        @media (min-width: 900px) {
+          .admin-2col { grid-template-columns: 1fr 300px; align-items: start; }
+        }
+
         /* ── Desktop (≥1024px): static sidebar, no overlay/hamburger ── */
         @media (min-width: 1024px) {
           .admin-backdrop { display: none; }

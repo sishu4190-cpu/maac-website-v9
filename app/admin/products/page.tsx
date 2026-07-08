@@ -209,7 +209,7 @@ export default function AdminProducts() {
         <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "10px 16px", marginBottom: 20, fontSize: 13, color: "#1e40af" }}>
           ℹ️ You are editing a catalogue product. Changes save immediately and reflect on the product page.
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16 }}>
+        <div className="admin-2col">
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={cardStyle}>
               <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1a4d2e", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Basic Information</h3>
@@ -272,7 +272,7 @@ export default function AdminProducts() {
           <Save size={14} />{saving ? "Saving…" : saved ? "Saved!" : "Save Product"}
         </button>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16 }}>
+      <div className="admin-2col">
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={cardStyle}>
             <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1a4d2e", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Basic Information</h3>
