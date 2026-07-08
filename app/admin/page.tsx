@@ -11,10 +11,10 @@ const totalProducts = allProducts.length;
 const totalCategories = categories.length;
 
 export default function AdminDashboard() {
-  const [data, setData] = useState<{ enquiries: { id: string; name: string; company: string; product: string; qty: string; location: string; status: string; time: string }[] } | null>(null);
+  const [data, setData] = useState<{ enquiries: { id: string; name: string; company: string; product: string; qty: string; location: string; status: string; time: string }[]; adminPassword?: string } | null>(null);
   const [showAlert, setShowAlert] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [storageStatus, setStorageStatus] = useState<{ connected: boolean; mode: string; message: string } | null>(null);
+  const [storageStatus, setStorageStatus] = useState<{ connected: boolean; mode: string; message: string; isDeployed?: boolean } | null>(null);
   const [checkingStorage, setCheckingStorage] = useState(true);
 
   useEffect(() => {
@@ -122,6 +122,8 @@ export default function AdminDashboard() {
             { label: "View Enquiries", desc: "Respond to buyers", href: "/admin/enquiries", bg: "#ffedd5", color: "#c2410c", emoji: "📬" },
             { label: "Update Contact", desc: "Phone, email, hours", href: "/admin/settings", bg: "#dcfce7", color: "#1a4d2e", emoji: "📞" },
             { label: "Blog Posts", desc: "Knowledge centre", href: "/admin/blog", bg: "#f3e8ff", color: "#7c3aed", emoji: "✍️" },
+            { label: "Homepage Image", desc: "Change background photo", href: "/admin/settings?tab=site", bg: "#fef3c7", color: "#b45309", emoji: "🖼️" },
+            { label: "Gallery", desc: "Office, factory, events photos", href: "/admin/gallery", bg: "#e0e7ff", color: "#4338ca", emoji: "📸" },
           ].map(a => (
             <Link key={a.href} href={a.href} style={{ textDecoration: "none" }}>
               <div style={{ background: "white", borderRadius: 12, padding: "18px 16px", border: "1px solid #f1f5f9", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
@@ -215,18 +217,27 @@ export default function AdminDashboard() {
             { done: true, task: "Product catalogue data loaded" },
             { done: true, task: "Contact form configured" },
             { done: true, task: "Certificates uploaded (PDFs)" },
-            { done: false, task: "Connect SMTP for email notifications" },
-            { done: false, task: "Upload hero video (optional)" },
-            { done: false, task: "Change default admin password" },
-            { done: false, task: "Deploy to production (Vercel)" },
-            { done: false, task: "Submit sitemap to Google Search Console" },
+            { done: true, task: "Email notifications connected" },
+            { done: true, task: "Homepage image set" },
+            { done: Boolean(data?.adminPassword), task: "Change default admin password" },
+            { done: Boolean(storageStatus?.isDeployed), task: "Deploy to production (Vercel)" },
+            { done: false, task: "Submit sitemap to Google Search Console", href: "https://search.google.com/search-console" },
           ].map((item, i) => (
+            item.href ? (
+              <a key={i} href={item.href} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: item.done ? "#86efac" : "rgba(255,255,255,0.65)", textDecoration: "none" }}>
+                {item.done
+                  ? <CheckCircle size={15} style={{ color: "#4ade80", flexShrink: 0 }} />
+                  : <div style={{ width: 15, height: 15, border: "2px solid rgba(255,255,255,0.3)", borderRadius: "50%", flexShrink: 0 }} />}
+                {item.task} <span style={{ textDecoration: "underline", flexShrink: 0 }}>→</span>
+              </a>
+            ) : (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: item.done ? "#86efac" : "rgba(255,255,255,0.65)" }}>
               {item.done
                 ? <CheckCircle size={15} style={{ color: "#4ade80", flexShrink: 0 }} />
                 : <div style={{ width: 15, height: 15, border: "2px solid rgba(255,255,255,0.3)", borderRadius: "50%", flexShrink: 0 }} />}
               {item.task}
             </div>
+            )
           ))}
         </div>
       </div>

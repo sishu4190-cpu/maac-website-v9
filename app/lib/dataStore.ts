@@ -1,9 +1,15 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { put, list } from '@vercel/blob';
+import { put, list, del } from '@vercel/blob';
 
 const DATA_FILE = join(process.cwd(), 'admin-data.json');
-const BLOB_DATA_PATH = 'data/admin-data.json';
+// Every save writes to a brand-new, uniquely-named blob rather than
+// overwriting one fixed path. Vercel's CDN treats a given URL/pathname as
+// immutable and can serve a stale cached copy right after an overwrite —
+// a new filename every time guarantees we always read back exactly what
+// was just written, with no caching race condition possible.
+const BLOB_DATA_PREFIX = 'data/admin-data-';
+const BLOB_VERSIONS_TO_KEEP = 3;
 
 // On Vercel, the local filesystem is read-only/ephemeral — writes vanish
 // between requests. When a Blob store is connected, we persist there
@@ -220,11 +226,12 @@ export function getDefaultData(): AppData {
 async function readRawJson(): Promise<Record<string, unknown> | null> {
   if (useBlob()) {
     try {
-      const { blobs } = await list({ prefix: BLOB_DATA_PATH, limit: 1 });
-      const found = blobs.find((b) => b.pathname === BLOB_DATA_PATH);
-      if (!found) return null;
-      // Cache-bust so we always read the latest write, not a stale CDN copy.
-      const res = await fetch(`${found.url}?t=${Date.now()}`, { cache: 'no-store' });
+      const { blobs } = await list({ prefix: BLOB_DATA_PREFIX, limit: 20 });
+      if (blobs.length === 0) return null;
+      // Filenames embed a millisecond timestamp, so the lexicographically
+      // (and numerically) largest one is the most recent write.
+      const newest = [...blobs].sort((a, b) => (b.pathname > a.pathname ? 1 : -1))[0];
+      const res = await fetch(newest.url, { cache: 'no-store' });
       if (!res.ok) return null;
       return await res.json();
     } catch (e) {
@@ -280,13 +287,22 @@ export async function writeData(data: AppData): Promise<boolean> {
   const json = JSON.stringify(data, null, 2);
   if (useBlob()) {
     try {
-      await put(BLOB_DATA_PATH, json, {
+      const path = `${BLOB_DATA_PREFIX}${Date.now()}.json`;
+      await put(path, json, {
         access: 'public',
         addRandomSuffix: false,
-        allowOverwrite: true,
         contentType: 'application/json',
         cacheControlMaxAge: 0,
       });
+      // Best-effort cleanup of older versions — never let this fail the save.
+      try {
+        const { blobs } = await list({ prefix: BLOB_DATA_PREFIX, limit: 50 });
+        const sorted = [...blobs].sort((a, b) => (b.pathname > a.pathname ? 1 : -1));
+        const stale = sorted.slice(BLOB_VERSIONS_TO_KEEP);
+        if (stale.length > 0) await del(stale.map((b) => b.url));
+      } catch (cleanupErr) {
+        console.warn('[dataStore] Blob cleanup skipped:', cleanupErr);
+      }
       return true;
     } catch (e) {
       console.error('[dataStore] Blob write error:', e);

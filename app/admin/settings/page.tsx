@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AdminShell from "../lib/AdminShell";
 import { adminGet, adminPost } from "../lib/api";
 import { Save, CheckCircle, AlertCircle, Plus, Trash2, Eye, EyeOff } from "lucide-react";
@@ -7,7 +8,17 @@ import { Save, CheckCircle, AlertCircle, Plus, Trash2, Eye, EyeOff } from "lucid
 type Tab = "contact" | "social" | "site" | "security";
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<Tab>("contact");
+  return (
+    <Suspense fallback={null}>
+      <SettingsPageInner />
+    </Suspense>
+  );
+}
+
+function SettingsPageInner() {
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as Tab) || "contact";
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
