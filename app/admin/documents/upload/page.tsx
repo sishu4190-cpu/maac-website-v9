@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 import AdminShell from "../../lib/AdminShell";
+import { uploadFile } from "../../lib/upload";
 import { Upload, CheckCircle, X, Copy, Award, FileArchive } from "lucide-react";
 
 const docTypes = [
@@ -48,17 +49,10 @@ export default function DocumentsUploadPage() {
     setUploading(true);
     setError("");
     try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("type", `document-${docType}`);
-      const token = sessionStorage.getItem("maac_admin_token") || "";
-      const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-admin-token": token }, body: formData });
-      const data = await res.json();
-      if (data.success) {
-        setUploadedUrl(data.path);
-      } else setError(data.error || "Upload failed.");
-    } catch {
-      setError("Upload failed. Please try again.");
+      const path = await uploadFile(selectedFile, `document-${docType}`);
+      setUploadedUrl(path);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed. Please try again.");
     }
     setUploading(false);
   };

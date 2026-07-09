@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import AdminShell from "../lib/AdminShell";
 import { adminGet, adminPost } from "../lib/api";
+import { uploadFile } from "../lib/upload";
 import { Upload, Trash2, ArrowLeft, CheckCircle, Image as ImageIcon, Clock } from "lucide-react";
 
 interface GalleryImage { id: string; url: string; caption?: string }
@@ -28,13 +29,11 @@ export default function GalleryAdminPage() {
   const flash = () => { setSaved(true); setTimeout(() => setSaved(false), 2500); };
 
   const upload = async (file: File, type: string): Promise<string | null> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", type);
-    const token = sessionStorage.getItem("maac_admin_token") || "";
-    const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-admin-token": token }, body: formData });
-    const data = await res.json();
-    return data.success ? data.path : null;
+    try {
+      return await uploadFile(file, type);
+    } catch {
+      return null;
+    }
   };
 
   const active = categories.find((c) => c.id === activeId) || null;

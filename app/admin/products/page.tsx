@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AdminShell from "../lib/AdminShell";
 import { adminGet, adminPost } from "../lib/api";
+import { uploadFile } from "../lib/upload";
 import { Plus, Search, Edit2, Trash2, Eye, EyeOff, Save, X, Package, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import { categories } from "@/app/data/products";
 
@@ -238,17 +239,10 @@ export default function AdminProducts() {
     if (!file.type.startsWith("image/")) { setError("Only image files (JPG, PNG, WEBP) are allowed."); return; }
     setError(""); setUploadingImage(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", "product-photo");
-      const token = sessionStorage.getItem("maac_admin_token") || "";
-      const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-admin-token": token }, body: formData });
-      const data = await res.json();
-      if (data.success) {
-        if (target === "custom") setEditing(prev => ({ ...prev, image: data.path }));
-        else setEditingStatic(prev => prev ? { ...prev, image: data.path } : null);
-      } else setError(data.error || "Upload failed.");
-    } catch { setError("Upload failed."); }
+      const path = await uploadFile(file, "product-photo");
+      if (target === "custom") setEditing(prev => ({ ...prev, image: path }));
+      else setEditingStatic(prev => prev ? { ...prev, image: path } : null);
+    } catch (e) { setError(e instanceof Error ? e.message : "Upload failed."); }
     setUploadingImage(false);
   };
 

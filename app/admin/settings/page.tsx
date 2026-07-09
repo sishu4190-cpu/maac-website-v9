@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import AdminShell from "../lib/AdminShell";
 import { adminGet, adminPost } from "../lib/api";
+import { uploadFile } from "../lib/upload";
 import { Save, CheckCircle, AlertCircle, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 
 type Tab = "contact" | "social" | "site" | "security";
@@ -99,18 +100,11 @@ function SettingsPageInner() {
     if (!file.type.startsWith("image/")) { setError("Only image files (JPG, PNG, WEBP) are allowed."); return; }
     setError(""); setUploadingHero(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", "hero-image");
-      const token = sessionStorage.getItem("maac_admin_token") || "";
-      const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-admin-token": token }, body: formData });
-      const data = await res.json();
-      if (data.success) {
-        setHeroImage(data.path);
-        await adminPost("hero_image_save", { heroImage: data.path });
-        showSaved("Homepage image updated!");
-      } else setError(data.error || "Upload failed.");
-    } catch { setError("Upload failed."); }
+      const path = await uploadFile(file, "hero-image");
+      setHeroImage(path);
+      await adminPost("hero_image_save", { heroImage: path });
+      showSaved("Homepage image updated!");
+    } catch (e) { setError(e instanceof Error ? e.message : "Upload failed."); }
     setUploadingHero(false);
   };
 

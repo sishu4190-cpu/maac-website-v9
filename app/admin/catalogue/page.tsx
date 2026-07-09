@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import AdminShell from "../lib/AdminShell";
 import { adminGet, adminPost } from "../lib/api";
+import { uploadFile } from "../lib/upload";
 import { Upload, FileText, CheckCircle, RefreshCw, Download, AlertCircle, X } from "lucide-react";
 
 export default function CataloguePage() {
@@ -20,24 +21,17 @@ export default function CataloguePage() {
   const handleFile = async (file: File) => {
     if (!file) return;
     if (file.type !== "application/pdf") { setError("Only PDF files are allowed."); return; }
-    if (file.size > 20 * 1024 * 1024) { setError("File size must be under 20 MB."); return; }
+    if (file.size > 45 * 1024 * 1024) { setError("File size must be under 45 MB."); return; }
     setError(""); setUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", "catalogue");
-      const token = sessionStorage.getItem("maac_admin_token") || "";
-      const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-admin-token": token }, body: formData });
-      const data = await res.json();
-      if (data.success) {
-        await adminPost("catalogue_update", { file: data.path });
-        setCurrentFile(data.path);
-        setUploadedName(file.name);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-      } else setError(data.error || "Upload failed.");
-    } catch { setError("Upload failed. Please try again."); }
+      const path = await uploadFile(file, "catalogue");
+      await adminPost("catalogue_update", { file: path });
+      setCurrentFile(path);
+      setUploadedName(file.name);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) { setError(e instanceof Error ? e.message : "Upload failed. Please try again."); }
     setUploading(false);
   };
 
@@ -115,7 +109,7 @@ export default function CataloguePage() {
                 <p style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 6 }}>Drag & Drop PDF here</p>
                 <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 12 }}>or click to browse files</p>
                 <span style={{ fontSize: 12, background: "#1a4d2e", color: "white", padding: "6px 18px", borderRadius: 999, fontWeight: 600 }}>Select PDF File</span>
-                <p style={{ fontSize: 11, color: "#d1d5db", marginTop: 12 }}>Max file size: 20 MB · PDF only</p>
+                <p style={{ fontSize: 11, color: "#d1d5db", marginTop: 12 }}>Max file size: 45 MB · PDF only</p>
               </div>
             )}
           </div>
