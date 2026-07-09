@@ -84,6 +84,7 @@ export interface CustomProduct {
   applications: string[];
   packaging: string[];
   specifications?: Record<string, string>;
+  image?: string | null;
   published: boolean;
   createdAt: string;
 }
@@ -95,6 +96,7 @@ export interface ProductOverride {
   cas?: string;
   hsn?: string;
   formula?: string;
+  image?: string | null;
   specifications?: Record<string, string>;
   applications?: string[];
   packaging?: string[];

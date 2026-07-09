@@ -10,6 +10,7 @@ interface CustomProduct {
   cas?: string; hsn?: string; formula?: string;
   applications: string[]; packaging: string[];
   specifications?: Record<string, string>;
+  image?: string | null;
   published: boolean; createdAt: string;
 }
 
@@ -17,13 +18,14 @@ interface ProductOverride {
   productId: string; name?: string; description?: string;
   cas?: string; hsn?: string; formula?: string;
   specifications?: Record<string, string>;
+  image?: string | null;
   applications?: string[]; packaging?: string[];
 }
 
 const emptyProduct = (): Partial<CustomProduct> => ({
   name: "", categoryId: categories[0]?.id || "", description: "",
   cas: "", hsn: "", formula: "",
-  applications: [], packaging: [], specifications: {}, published: true,
+  applications: [], packaging: [], specifications: {}, image: null, published: true,
 });
 
 const inpStyle = { width: "100%", padding: "9px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const };
@@ -122,6 +124,8 @@ export default function AdminProducts() {
   const [isNew, setIsNew] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [error, setError] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [tab, setTab] = useState<"custom" | "static">("custom");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -230,6 +234,29 @@ export default function AdminProducts() {
     else setEditingStatic(prev => { if (!prev) return null; const s = { ...(prev.specifications || {}) }; delete s[key]; return { ...prev, specifications: s }; });
   };
 
+  const handleImageUpload = async (file: File, target: "custom" | "static") => {
+    if (!file.type.startsWith("image/")) { setError("Only image files (JPG, PNG, WEBP) are allowed."); return; }
+    setError(""); setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "product-photo");
+      const token = sessionStorage.getItem("maac_admin_token") || "";
+      const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-admin-token": token }, body: formData });
+      const data = await res.json();
+      if (data.success) {
+        if (target === "custom") setEditing(prev => ({ ...prev, image: data.path }));
+        else setEditingStatic(prev => prev ? { ...prev, image: data.path } : null);
+      } else setError(data.error || "Upload failed.");
+    } catch { setError("Upload failed."); }
+    setUploadingImage(false);
+  };
+
+  const removeImage = (target: "custom" | "static") => {
+    if (target === "custom") setEditing(prev => ({ ...prev, image: null }));
+    else setEditingStatic(prev => prev ? { ...prev, image: null } : null);
+  };
+
   const cardStyle = { background: "white", borderRadius: 12, padding: 24, border: "1px solid #f1f5f9" };
 
   // Static Product Editor
@@ -246,8 +273,27 @@ export default function AdminProducts() {
         <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "10px 16px", marginBottom: 20, fontSize: 13, color: "#1e40af" }}>
           ℹ️ You are editing a catalogue product. Changes save immediately and reflect on the product page.
         </div>
+        {error && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 16px", marginBottom: 20, fontSize: 13, color: "#dc2626" }}>{error}</div>
+        )}
         <div className="admin-2col">
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={cardStyle}>
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1a4d2e", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Product Image</h3>
+              <p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 14 }}>Shown on the product page. If left empty, a default icon is shown instead.</p>
+              {editingStatic.image ? (
+                <div style={{ marginBottom: 12 }}>
+                  <img src={editingStatic.image} alt="" style={{ width: 140, height: 140, objectFit: "cover", borderRadius: 12, border: "1px solid #e5e7eb", display: "block", marginBottom: 8 }} />
+                  <button onClick={() => removeImage("static")} style={{ fontSize: 12, color: "#dc2626", background: "none", border: "none", cursor: "pointer", padding: 0 }}>Remove photo</button>
+                </div>
+              ) : null}
+              <input type="file" accept="image/*" id="product-image-static" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f, "static"); }} />
+              <button onClick={() => document.getElementById("product-image-static")?.click()} disabled={uploadingImage}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: uploadingImage ? "#e5e7eb" : "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, cursor: uploadingImage ? "not-allowed" : "pointer", fontWeight: 600 }}>
+                {uploadingImage ? "Uploading..." : editingStatic.image ? "Replace Photo" : "Upload Photo"}
+              </button>
+            </div>
+
             <div style={cardStyle}>
               <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1a4d2e", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Basic Information</h3>
               {[{ label: "Product Name", key: "name" }, { label: "CAS Number", key: "cas" }, { label: "Chemical Formula", key: "formula" }, { label: "HSN Code", key: "hsn" }].map(({ label, key }) => (
@@ -312,8 +358,27 @@ export default function AdminProducts() {
           <Save size={14} />{saving ? "Saving…" : saved ? "Saved!" : "Save Product"}
         </button>
       </div>
+      {error && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 16px", marginBottom: 20, fontSize: 13, color: "#dc2626" }}>{error}</div>
+      )}
       <div className="admin-2col">
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={cardStyle}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1a4d2e", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Product Image</h3>
+            <p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 14 }}>Shown on the product page. If left empty, a default icon is shown instead.</p>
+            {editing?.image ? (
+              <div style={{ marginBottom: 12 }}>
+                <img src={editing.image} alt="" style={{ width: 140, height: 140, objectFit: "cover", borderRadius: 12, border: "1px solid #e5e7eb", display: "block", marginBottom: 8 }} />
+                <button onClick={() => removeImage("custom")} style={{ fontSize: 12, color: "#dc2626", background: "none", border: "none", cursor: "pointer", padding: 0 }}>Remove photo</button>
+              </div>
+            ) : null}
+            <input type="file" accept="image/*" id="product-image-custom" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f, "custom"); }} />
+            <button onClick={() => document.getElementById("product-image-custom")?.click()} disabled={uploadingImage}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: uploadingImage ? "#e5e7eb" : "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, cursor: uploadingImage ? "not-allowed" : "pointer", fontWeight: 600 }}>
+              {uploadingImage ? "Uploading..." : editing?.image ? "Replace Photo" : "Upload Photo"}
+            </button>
+          </div>
+
           <div style={cardStyle}>
             <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1a4d2e", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Basic Information</h3>
             {[{ label: "Product Name *", key: "name" }, { label: "CAS Number", key: "cas" }, { label: "Chemical Formula", key: "formula" }, { label: "HSN Code", key: "hsn" }].map(({ label, key }) => (
