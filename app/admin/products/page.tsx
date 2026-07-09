@@ -26,6 +26,90 @@ const emptyProduct = (): Partial<CustomProduct> => ({
   applications: [], packaging: [], specifications: {}, published: true,
 });
 
+const inpStyle = { width: "100%", padding: "9px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const };
+
+// IMPORTANT: This component must stay defined here, at module scope (outside
+// AdminProducts), not as a `const` inside the component function. Defining
+// it inside the parent meant a brand-new component reference was created on
+// every single render (i.e. every keystroke) — React then treated it as a
+// completely different component type each time, unmounted the old <input>
+// DOM node and mounted a fresh one, which is what threw away focus (and
+// closed the mobile keyboard) after every character typed. Keeping it here
+// gives it a stable identity across renders, so the input element persists
+// and keeps focus normally.
+// Also moved to module scope for the same reason as SpecsEditor above —
+// it was defined inline inside AdminProducts, losing input focus on every
+// keystroke.
+function TagInput({ field, value, setValue, placeholder, onAdd, onRemove, tags }: {
+  field: "applications" | "packaging";
+  value: string;
+  setValue: (v: string) => void;
+  placeholder: string;
+  onAdd: (f: "applications" | "packaging", v: string) => void;
+  onRemove: (f: "applications" | "packaging", i: number) => void;
+  tags: string[];
+}) {
+  return (
+    <div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+        {tags.map((tag, i) => (
+          <span key={i} style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 999, fontSize: 12, padding: "3px 10px", display: "flex", alignItems: "center", gap: 4 }}>
+            {tag}<button onClick={() => onRemove(field, i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 0, fontSize: 14 }}>×</button>
+          </span>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        <input value={value} onChange={e => setValue(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); onAdd(field, value); } }} placeholder={placeholder} style={{ ...inpStyle, flex: 1 }} />
+        <button onClick={() => onAdd(field, value)} style={{ padding: "8px 14px", background: "#1a4d2e", color: "white", border: "none", borderRadius: 8, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Add</button>
+      </div>
+    </div>
+  );
+}
+
+function SpecsEditor({
+  specs, onUpdate, onRemove, target, newSpecKey, setNewSpecKey, newSpecVal, setNewSpecVal, addSpec,
+}: {
+  specs: Record<string, string>;
+  onUpdate: (k: string, v: string) => void;
+  onRemove: (k: string, t: "custom" | "static") => void;
+  target: "custom" | "static";
+  newSpecKey: string;
+  setNewSpecKey: (v: string) => void;
+  newSpecVal: string;
+  setNewSpecVal: (v: string) => void;
+  addSpec: (t: "custom" | "static") => void;
+}) {
+  return (
+    <div>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 12 }}>
+          <thead>
+            <tr style={{ background: "#f9fafb" }}>
+              <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 600, color: "#6b7280", fontSize: 11, width: "40%" }}>Parameter</th>
+              <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 600, color: "#6b7280", fontSize: 11 }}>Value</th>
+              <th style={{ width: 40 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(specs).map(([k, v]) => (
+              <tr key={k} style={{ borderTop: "1px solid #f3f4f6" }}>
+                <td style={{ padding: "6px 12px" }}><input value={k} readOnly style={{ ...inpStyle, background: "#f9fafb", fontSize: 12 }} /></td>
+                <td style={{ padding: "6px 12px" }}><input value={v} onChange={e => onUpdate(k, e.target.value)} style={{ ...inpStyle, fontSize: 12 }} /></td>
+                <td style={{ padding: "6px 8px" }}><button onClick={() => onRemove(k, target)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444" }}><X size={13} /></button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input value={newSpecKey} onChange={e => setNewSpecKey(e.target.value)} placeholder="Parameter name" style={{ ...inpStyle, flex: 1, fontSize: 12 }} />
+        <input value={newSpecVal} onChange={e => setNewSpecVal(e.target.value)} placeholder="Value" style={{ ...inpStyle, flex: 1, fontSize: 12 }} />
+        <button onClick={() => addSpec(target)} style={{ padding: "8px 14px", background: "#1a4d2e", color: "white", border: "none", borderRadius: 8, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>+ Add Row</button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminProducts() {
   const [customProds, setCustomProds] = useState<CustomProduct[]>([]);
   const [hiddenIds, setHiddenIds] = useState<string[]>([]);
@@ -146,54 +230,7 @@ export default function AdminProducts() {
     else setEditingStatic(prev => { if (!prev) return null; const s = { ...(prev.specifications || {}) }; delete s[key]; return { ...prev, specifications: s }; });
   };
 
-  const inpStyle = { width: "100%", padding: "9px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const };
   const cardStyle = { background: "white", borderRadius: 12, padding: 24, border: "1px solid #f1f5f9" };
-
-  const TagInput = ({ field, value, setValue, placeholder, onAdd, onRemove, tags, isStatic }: { field: "applications" | "packaging"; value: string; setValue: (v: string) => void; placeholder: string; onAdd: (f: "applications" | "packaging", v: string) => void; onRemove: (f: "applications" | "packaging", i: number) => void; tags: string[]; isStatic?: boolean }) => (
-    <div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-        {tags.map((tag, i) => (
-          <span key={i} style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 999, fontSize: 12, padding: "3px 10px", display: "flex", alignItems: "center", gap: 4 }}>
-            {tag}<button onClick={() => onRemove(field, i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 0, fontSize: 14 }}>×</button>
-          </span>
-        ))}
-      </div>
-      <div style={{ display: "flex", gap: 6 }}>
-        <input value={value} onChange={e => setValue(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); onAdd(field, value); } }} placeholder={placeholder} style={{ ...inpStyle, flex: 1 }} />
-        <button onClick={() => onAdd(field, value)} style={{ padding: "8px 14px", background: "#1a4d2e", color: "white", border: "none", borderRadius: 8, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Add</button>
-      </div>
-    </div>
-  );
-
-  const SpecsEditor = ({ specs, onUpdate, onRemove, target }: { specs: Record<string, string>; onUpdate: (k: string, v: string) => void; onRemove: (k: string, t: "custom" | "static") => void; target: "custom" | "static" }) => (
-    <div>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 12 }}>
-          <thead>
-            <tr style={{ background: "#f9fafb" }}>
-              <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 600, color: "#6b7280", fontSize: 11, width: "40%" }}>Parameter</th>
-              <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 600, color: "#6b7280", fontSize: 11 }}>Value</th>
-              <th style={{ width: 40 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(specs).map(([k, v]) => (
-              <tr key={k} style={{ borderTop: "1px solid #f3f4f6" }}>
-                <td style={{ padding: "6px 12px" }}><input value={k} readOnly style={{ ...inpStyle, background: "#f9fafb", fontSize: 12 }} /></td>
-                <td style={{ padding: "6px 12px" }}><input value={v} onChange={e => onUpdate(k, e.target.value)} style={{ ...inpStyle, fontSize: 12 }} /></td>
-                <td style={{ padding: "6px 8px" }}><button onClick={() => onRemove(k, target)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444" }}><X size={13} /></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input value={newSpecKey} onChange={e => setNewSpecKey(e.target.value)} placeholder="Parameter name" style={{ ...inpStyle, flex: 1, fontSize: 12 }} />
-        <input value={newSpecVal} onChange={e => setNewSpecVal(e.target.value)} placeholder="Value" style={{ ...inpStyle, flex: 1, fontSize: 12 }} />
-        <button onClick={() => addSpec(target)} style={{ padding: "8px 14px", background: "#1a4d2e", color: "white", border: "none", borderRadius: 8, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>+ Add Row</button>
-      </div>
-    </div>
-  );
 
   // Static Product Editor
   if (view === "static-editor" && editingStatic) {
@@ -229,17 +266,20 @@ export default function AdminProducts() {
               <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1a4d2e", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Specifications</h3>
               <SpecsEditor specs={editingStatic.specifications || {}} target="static"
                 onUpdate={(k, v) => setEditingStatic(prev => prev ? { ...prev, specifications: { ...(prev.specifications || {}), [k]: v } } : null)}
-                onRemove={removeSpec} />
+                onRemove={removeSpec}
+                newSpecKey={newSpecKey} setNewSpecKey={setNewSpecKey}
+                newSpecVal={newSpecVal} setNewSpecVal={setNewSpecVal}
+                addSpec={addSpec} />
             </div>
 
             <div style={cardStyle}>
               <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1a4d2e", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Applications</h3>
-              <TagInput field="applications" value={appInput} setValue={setAppInput} placeholder="e.g. Fertilizer manufacturing" tags={editingStatic.applications || []} onAdd={addStaticTag} onRemove={removeStaticTag} isStatic />
+              <TagInput field="applications" value={appInput} setValue={setAppInput} placeholder="e.g. Fertilizer manufacturing" tags={editingStatic.applications || []} onAdd={addStaticTag} onRemove={removeStaticTag} />
             </div>
 
             <div style={cardStyle}>
               <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1a4d2e", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Packaging Options</h3>
-              <TagInput field="packaging" value={packInput} setValue={setPackInput} placeholder="e.g. 25 kg bags" tags={editingStatic.packaging || []} onAdd={addStaticTag} onRemove={removeStaticTag} isStatic />
+              <TagInput field="packaging" value={packInput} setValue={setPackInput} placeholder="e.g. 25 kg bags" tags={editingStatic.packaging || []} onAdd={addStaticTag} onRemove={removeStaticTag} />
             </div>
           </div>
 
@@ -292,7 +332,10 @@ export default function AdminProducts() {
             <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1a4d2e", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Specifications</h3>
             <SpecsEditor specs={editing?.specifications || {}} target="custom"
               onUpdate={(k, v) => setEditing(prev => ({ ...prev, specifications: { ...(prev?.specifications || {}), [k]: v } }))}
-              onRemove={removeSpec} />
+              onRemove={removeSpec}
+              newSpecKey={newSpecKey} setNewSpecKey={setNewSpecKey}
+              newSpecVal={newSpecVal} setNewSpecVal={setNewSpecVal}
+              addSpec={addSpec} />
           </div>
 
           <div style={cardStyle}>
