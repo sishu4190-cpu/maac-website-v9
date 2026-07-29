@@ -1,7 +1,24 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { put, list, del } from '@vercel/blob';
 
 const DATA_FILE = join(process.cwd(), 'admin-data.json');
+// Every save writes to a brand-new, uniquely-named blob rather than
+// overwriting one fixed path. Vercel's CDN treats a given URL/pathname as
+// immutable and can serve a stale cached copy right after an overwrite —
+// a new filename every time guarantees we always read back exactly what
+// was just written, with no caching race condition possible.
+const BLOB_DATA_PREFIX = 'data/admin-data-';
+const BLOB_VERSIONS_TO_KEEP = 3;
+
+// On Vercel, the local filesystem is read-only/ephemeral — writes vanish
+// between requests. When a Blob store is connected, we persist there
+// instead. Locally (npm run dev), we keep using the plain JSON file so no
+// cloud setup is required to develop.
+// Vercel now connects Blob stores via short-lived OIDC tokens by default —
+// that mode sets BLOB_STORE_ID (and VERCEL_OIDC_TOKEN at runtime) but does
+// NOT set the older BLOB_READ_WRITE_TOKEN, so we must check for either.
+const useBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 
 export interface ContactData {
   phones: string[];
@@ -67,6 +84,7 @@ export interface CustomProduct {
   applications: string[];
   packaging: string[];
   specifications?: Record<string, string>;
+  image?: string | null;
   published: boolean;
   createdAt: string;
 }
@@ -78,6 +96,7 @@ export interface ProductOverride {
   cas?: string;
   hsn?: string;
   formula?: string;
+  image?: string | null;
   specifications?: Record<string, string>;
   applications?: string[];
   packaging?: string[];
@@ -132,6 +151,13 @@ export interface AppData {
   certificateOverrides: CertificateData[] | null;
   galleryCategories: GalleryCategory[];
   catalogueFile: string | null;
+  heroImage: string;
+  /** Optional homepage hero background video. When set, the homepage plays
+   * this video (muted/looping) instead of the static heroImage; heroImage
+   * is still used as the video's poster frame and as the fallback if the
+   * video fails to load. */
+  heroVideo?: string | null;
+  socialEmbedCode?: string;
   activityLog: ActivityLogEntry[];
   adminPassword?: string;
   otpData?: { otp: string; expires: number; used: boolean } | null;
@@ -198,34 +224,65 @@ export function getDefaultData(): AppData {
       { id: 'import-export', name: 'Import / Export', tagline: 'Global trade & logistics', cover: null, images: [], comingSoon: true },
     ],
     catalogueFile: null,
+    heroImage: '/assets/maac-media/images/hero-office-gate.jpg',
+    heroVideo: null,
+    socialEmbedCode: '',
     activityLog: [],
     adminPassword: undefined,
     otpData: null,
   };
 }
 
-export function readData(): AppData {
+async function readRawJson(): Promise<Record<string, unknown> | null> {
+  if (useBlob()) {
+    try {
+      const { blobs } = await list({ prefix: BLOB_DATA_PREFIX, limit: 20 });
+      if (blobs.length === 0) return null;
+      // Filenames embed a millisecond timestamp, so the lexicographically
+      // (and numerically) largest one is the most recent write.
+      const newest = [...blobs].sort((a, b) => (b.pathname > a.pathname ? 1 : -1))[0];
+      const res = await fetch(newest.url, { cache: 'no-store' });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      console.error('[dataStore] Blob read error:', e);
+      return null;
+    }
+  }
   try {
     if (existsSync(DATA_FILE)) {
-      const raw = readFileSync(DATA_FILE, 'utf8');
-      const parsed = JSON.parse(raw);
+      return JSON.parse(readFileSync(DATA_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('[dataStore] Local read error:', e);
+  }
+  return null;
+}
+
+export async function readData(): Promise<AppData> {
+  try {
+    const parsed = await readRawJson();
+    if (parsed) {
       const defaults = getDefaultData();
       return {
-        contact: { ...defaults.contact, ...parsed.contact },
-        settings: { ...defaults.settings, ...parsed.settings },
-        enquiries: parsed.enquiries || [],
-        blogPosts: parsed.blogPosts || [],
-        customProducts: parsed.customProducts || [],
-        hiddenProducts: parsed.hiddenProducts || [],
-        customCategories: parsed.customCategories || [],
-        coaFiles: parsed.coaFiles || {},
-        productOverrides: parsed.productOverrides || {},
-        certificateOverrides: parsed.certificateOverrides || null,
-        galleryCategories: mergeGalleryCategories(defaults.galleryCategories, parsed.galleryCategories),
-        catalogueFile: parsed.catalogueFile || null,
-        activityLog: Array.isArray(parsed.activityLog) ? parsed.activityLog.slice(0, 500) : [],
-        adminPassword: parsed.adminPassword,
-        otpData: parsed.otpData || null,
+        contact: { ...defaults.contact, ...(parsed.contact as object) },
+        settings: { ...defaults.settings, ...(parsed.settings as object) },
+        enquiries: (parsed.enquiries as AppData['enquiries']) || [],
+        blogPosts: (parsed.blogPosts as AppData['blogPosts']) || [],
+        customProducts: (parsed.customProducts as AppData['customProducts']) || [],
+        hiddenProducts: (parsed.hiddenProducts as string[]) || [],
+        customCategories: (parsed.customCategories as AppData['customCategories']) || [],
+        coaFiles: (parsed.coaFiles as Record<string, string>) || {},
+        productOverrides: (parsed.productOverrides as AppData['productOverrides']) || {},
+        certificateOverrides: (parsed.certificateOverrides as AppData['certificateOverrides']) || null,
+        galleryCategories: mergeGalleryCategories(defaults.galleryCategories, parsed.galleryCategories as GalleryCategory[]),
+        catalogueFile: (parsed.catalogueFile as string) || null,
+        heroImage: (parsed.heroImage as string) || defaults.heroImage,
+        heroVideo: (parsed.heroVideo as string) || null,
+        socialEmbedCode: (parsed.socialEmbedCode as string) || '',
+        activityLog: Array.isArray(parsed.activityLog) ? (parsed.activityLog as ActivityLogEntry[]).slice(0, 500) : [],
+        adminPassword: parsed.adminPassword as string | undefined,
+        otpData: (parsed.otpData as AppData['otpData']) || null,
       };
     }
     if (process.env.ADMIN_DATA_JSON) {
@@ -238,12 +295,37 @@ export function readData(): AppData {
   return getDefaultData();
 }
 
-export function writeData(data: AppData): boolean {
+export async function writeData(data: AppData): Promise<boolean> {
+  const json = JSON.stringify(data, null, 2);
+  if (useBlob()) {
+    try {
+      const path = `${BLOB_DATA_PREFIX}${Date.now()}.json`;
+      await put(path, json, {
+        access: 'public',
+        addRandomSuffix: false,
+        contentType: 'application/json',
+        cacheControlMaxAge: 0,
+      });
+      // Best-effort cleanup of older versions — never let this fail the save.
+      try {
+        const { blobs } = await list({ prefix: BLOB_DATA_PREFIX, limit: 50 });
+        const sorted = [...blobs].sort((a, b) => (b.pathname > a.pathname ? 1 : -1));
+        const stale = sorted.slice(BLOB_VERSIONS_TO_KEEP);
+        if (stale.length > 0) await del(stale.map((b) => b.url));
+      } catch (cleanupErr) {
+        console.warn('[dataStore] Blob cleanup skipped:', cleanupErr);
+      }
+      return true;
+    } catch (e) {
+      console.error('[dataStore] Blob write error:', e);
+      return false;
+    }
+  }
   try {
-    writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    writeFileSync(DATA_FILE, json, 'utf8');
     return true;
   } catch (e) {
-    console.error('[dataStore] Write error:', e);
+    console.error('[dataStore] Local write error:', e);
     return false;
   }
 }

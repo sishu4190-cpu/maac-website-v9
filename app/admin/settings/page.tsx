@@ -1,13 +1,25 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AdminShell from "../lib/AdminShell";
 import { adminGet, adminPost } from "../lib/api";
+import { uploadFile } from "../lib/upload";
 import { Save, CheckCircle, AlertCircle, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 
 type Tab = "contact" | "social" | "site" | "security";
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<Tab>("contact");
+  return (
+    <Suspense fallback={null}>
+      <SettingsPageInner />
+    </Suspense>
+  );
+}
+
+function SettingsPageInner() {
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as Tab) || "contact";
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
@@ -31,6 +43,11 @@ export default function SettingsPage() {
   const [tagline, setTagline] = useState("Reliable Industrial Chemical Supplier in Vapi, Gujarat");
   const [metaDesc, setMetaDesc] = useState("");
   const [indiamartUrl, setIndiamartUrl] = useState("https://www.indiamart.com/mangalam-acid-chemicals/");
+  const [heroImage, setHeroImage] = useState("/assets/maac-media/images/hero-office-gate.jpg");
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const [heroVideo, setHeroVideo] = useState<string | null>(null);
+  const [uploadingHeroVideo, setUploadingHeroVideo] = useState(false);
+  const [socialEmbedCode, setSocialEmbedCode] = useState("");
 
   // Security
   const [currentPw, setCurrentPw] = useState("");
@@ -57,6 +74,9 @@ export default function SettingsPage() {
         setMetaDesc(d.settings.metaDescription || metaDesc);
         setIndiamartUrl(d.settings.indiamartUrl || indiamartUrl);
       }
+      if (d.heroImage) setHeroImage(d.heroImage);
+      if (d.heroVideo) setHeroVideo(d.heroVideo);
+      if (d.socialEmbedCode) setSocialEmbedCode(d.socialEmbedCode);
       setLoading(false);
     });
   }, []);
@@ -72,6 +92,15 @@ export default function SettingsPage() {
     setSaving(false);
   };
 
+  const saveSocialEmbed = async () => {
+    setSaving(true); setError("");
+    try {
+      await adminPost("social_embed_save", { socialEmbedCode });
+      showSaved("Social feed embed updated — check the /social page!");
+    } catch { setError("Save failed."); }
+    setSaving(false);
+  };
+
   const saveSite = async () => {
     setSaving(true); setError("");
     try {
@@ -79,6 +108,42 @@ export default function SettingsPage() {
       showSaved("Site settings updated!");
     } catch { setError("Save failed."); }
     setSaving(false);
+  };
+
+  const handleHeroUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) { setError("Only image files (JPG, PNG, WEBP) are allowed."); return; }
+    setError(""); setUploadingHero(true);
+    try {
+      const path = await uploadFile(file, "hero-image");
+      setHeroImage(path);
+      await adminPost("hero_image_save", { heroImage: path });
+      showSaved("Homepage image updated!");
+    } catch (e) { setError(e instanceof Error ? e.message : "Upload failed."); }
+    setUploadingHero(false);
+  };
+
+  const handleHeroVideoUpload = async (file: File) => {
+    if (!file.type.startsWith("video/")) { setError("Only video files (MP4, WEBM, MOV) are allowed."); return; }
+    if (file.size > 150 * 1024 * 1024) { setError("Video must be under 150MB. Please compress it first."); return; }
+    setError(""); setUploadingHeroVideo(true);
+    try {
+      const path = await uploadFile(file, "hero-video");
+      setHeroVideo(path);
+      await adminPost("hero_video_save", { heroVideo: path });
+      showSaved("Homepage video updated!");
+    } catch (e) { setError(e instanceof Error ? e.message : "Upload failed."); }
+    setUploadingHeroVideo(false);
+  };
+
+  const handleHeroVideoRemove = async () => {
+    if (!confirm("Remove homepage video and go back to the static image?")) return;
+    setUploadingHeroVideo(true);
+    try {
+      await adminPost("hero_video_reset", {});
+      setHeroVideo(null);
+      showSaved("Homepage video removed — showing image again.");
+    } catch { setError("Failed to remove video."); }
+    setUploadingHeroVideo(false);
   };
 
   const savePassword = async () => {
@@ -200,11 +265,67 @@ export default function SettingsPage() {
           <div style={{ ...cardStyle, marginTop: 16, background: "#eff6ff", border: "1px solid #bfdbfe" }}>
             <p style={{ fontSize: 13, color: "#1e40af" }}>💡 Social links update in the website footer immediately after saving. Empty fields will hide that platform's icon.</p>
           </div>
+
+          <div style={{ ...cardStyle, marginTop: 16 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#1a4d2e", marginBottom: 6 }}>📱 Social Media Page — Live Feed</h2>
+            <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 14, lineHeight: 1.6 }}>
+              The <code>/social</code> page on the website can auto-show your latest Instagram &amp; LinkedIn posts using a free/low-cost embed widget (e.g. Elfsight, SnapWidget, or LightWidget). Sign up on one of those, connect your Instagram/LinkedIn account there, copy the embed code they give you, and paste it below.
+            </p>
+            <textarea
+              value={socialEmbedCode}
+              onChange={(e) => setSocialEmbedCode(e.target.value)}
+              rows={5}
+              placeholder='Paste embed code here, e.g. <div class="elfsight-app-xxxxx"></div><script src="https://static.elfsight.com/platform/platform.js" async></script>'
+              style={{ ...inpStyle, resize: "vertical" as const, fontFamily: "monospace", fontSize: 12.5 }}
+            />
+            <button onClick={saveSocialEmbed} disabled={saving} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 24px", background: "#1a4d2e", color: "white", border: "none", borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 10 }}>
+              <Save size={14} />{saving ? "Saving..." : "Save Social Feed"}
+            </button>
+          </div>
         </div>
       )}
 
       {tab === "site" && (
         <div style={{ maxWidth: 700 }}>
+          <div style={{ ...cardStyle, marginBottom: 20 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#1a4d2e", marginBottom: 6 }}>🖼️ Homepage Background Image</h2>
+            <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>This is the large background photo behind the homepage headline.</p>
+            <img src={heroImage} alt="Homepage background" style={{ width: "100%", maxWidth: 420, borderRadius: 10, border: "1px solid #e5e7eb", marginBottom: 12, display: "block" }} />
+            <input type="file" accept="image/*" id="hero-upload" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleHeroUpload(f); }} />
+            <button onClick={() => document.getElementById("hero-upload")?.click()} disabled={uploadingHero}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", background: uploadingHero ? "#e5e7eb" : "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: uploadingHero ? "not-allowed" : "pointer" }}>
+              <Save size={14} /> {uploadingHero ? "Uploading..." : "Replace Homepage Image"}
+            </button>
+          </div>
+
+          <div style={{ ...cardStyle, marginBottom: 20 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#1a4d2e", marginBottom: 6 }}>🎬 Homepage Background Video (optional)</h2>
+            <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>
+              Upload a short (10–30 second) muted looping video to play instead of the static image above. The image above is still used as the poster frame while the video loads, and as a fallback on very slow connections. MP4 works best — keep the file under ~30MB for fast loading.
+            </p>
+            {heroVideo ? (
+              <video src={heroVideo} poster={heroImage} muted loop autoPlay playsInline
+                style={{ width: "100%", maxWidth: 420, borderRadius: 10, border: "1px solid #e5e7eb", marginBottom: 12, display: "block" }} />
+            ) : (
+              <div style={{ width: "100%", maxWidth: 420, height: 160, borderRadius: 10, border: "1px dashed #e5e7eb", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 13 }}>
+                No video set — homepage is currently showing the image above
+              </div>
+            )}
+            <input type="file" accept="video/mp4,video/webm,video/quicktime" id="hero-video-upload" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleHeroVideoUpload(f); }} />
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => document.getElementById("hero-video-upload")?.click()} disabled={uploadingHeroVideo}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", background: uploadingHeroVideo ? "#e5e7eb" : "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: uploadingHeroVideo ? "not-allowed" : "pointer" }}>
+                <Save size={14} /> {uploadingHeroVideo ? "Uploading..." : heroVideo ? "Replace Video" : "Upload Video"}
+              </button>
+              {heroVideo && (
+                <button onClick={handleHeroVideoRemove} disabled={uploadingHeroVideo}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  <Trash2 size={14} /> Remove Video
+                </button>
+              )}
+            </div>
+          </div>
+
           <div style={cardStyle}>
             <h2 style={{ fontSize: 15, fontWeight: 700, color: "#1a4d2e", marginBottom: 20 }}>⚙️ Site Settings</h2>
             <Inp label="Company Name" value={siteName} onChange={setSiteName} />

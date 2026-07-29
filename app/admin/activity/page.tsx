@@ -1,8 +1,8 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import AdminShell from "../lib/AdminShell";
 import { adminGet } from "../lib/api";
-import { Search, RefreshCw, History, Clock } from "lucide-react";
+import { Search, RefreshCw, History, Clock, FileDown } from "lucide-react";
 
 interface ActivityLogEntry {
   id: string;
@@ -48,6 +48,8 @@ export default function ActivityLogPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterGroup, setFilterGroup] = useState("all");
+  const [filterMonth, setFilterMonth] = useState("all");
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -57,12 +59,79 @@ export default function ActivityLogPage() {
 
   const groups = ["all", ...Array.from(new Set(Object.values(SECTION_GROUPS)))];
 
+  // Distinct "Month Year" options actually present in the log, newest first.
+  const monthOptions = useMemo(() => {
+    const set = new Set<string>();
+    log.forEach(e => {
+      const d = new Date(e.timestamp);
+      set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    });
+    return Array.from(set).sort().reverse();
+  }, [log]);
+
+  const monthLabel = (key: string) => {
+    const [y, m] = key.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  };
+
   const filtered = log.filter(e => {
     const group = SECTION_GROUPS[e.section] || "Other";
     const matchGroup = filterGroup === "all" || group === filterGroup;
     const matchSearch = !search || [e.label, e.detail, e.section].some(v => v.toLowerCase().includes(search.toLowerCase()));
-    return matchGroup && matchSearch;
+    const d = new Date(e.timestamp);
+    const entryMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const matchMonth = filterMonth === "all" || entryMonth === filterMonth;
+    return matchGroup && matchSearch && matchMonth;
   });
+
+  const exportPdf = async () => {
+    setExporting(true);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const autoTable = (await import("jspdf-autotable")).default;
+
+      const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      const title = "MAAC Admin — Activity Log";
+      const subtitle = filterMonth === "all" ? "All time" : monthLabel(filterMonth);
+      const generatedOn = new Date().toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" });
+
+      doc.setFontSize(16);
+      doc.setTextColor(26, 77, 46);
+      doc.text(title, 40, 44);
+      doc.setFontSize(11);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Period: ${subtitle}  ·  Generated: ${generatedOn}  ·  ${filtered.length} entries`, 40, 62);
+
+      const rows = filtered.map(e => {
+        const { day, time } = formatWhen(e.timestamp);
+        const group = SECTION_GROUPS[e.section] || "Other";
+        return [`${day}\n${time}`, group, e.label, e.detail || "—"];
+      });
+
+      autoTable(doc, {
+        startY: 78,
+        head: [["Date & Time", "Section", "Change", "Detail"]],
+        body: rows,
+        styles: { fontSize: 8.5, cellPadding: 6, valign: "top" },
+        headStyles: { fillColor: [26, 77, 46], textColor: 255, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [246, 250, 247] },
+        columnStyles: {
+          0: { cellWidth: 90 },
+          1: { cellWidth: 65 },
+          2: { cellWidth: 140 },
+          3: { cellWidth: "auto" },
+        },
+        margin: { left: 40, right: 40 },
+      });
+
+      const filenameSuffix = filterMonth === "all" ? "all-time" : filterMonth;
+      doc.save(`MAAC-Activity-Log-${filenameSuffix}.pdf`);
+    } catch (e) {
+      console.error("PDF export failed", e);
+      alert("Could not generate PDF. Please try again.");
+    }
+    setExporting(false);
+  };
 
   const cardStyle = { background: "white", borderRadius: 12, border: "1px solid #f1f5f9", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" };
 
@@ -72,7 +141,7 @@ export default function ActivityLogPage() {
         Every change made anywhere in the admin panel is recorded here automatically — what changed, and the exact date, day, and time it happened.
       </p>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="admin-toolbar" style={{ marginBottom: 16 }}>
         <div style={{ position: "relative", flex: "1 1 220px", minWidth: 200 }}>
           <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search activity…"
@@ -82,8 +151,17 @@ export default function ActivityLogPage() {
           style={{ padding: "9px 14px", border: "1px solid #e5e7eb", borderRadius: 999, fontSize: 13, background: "white" }}>
           {groups.map(g => <option key={g} value={g}>{g === "all" ? "All sections" : g}</option>)}
         </select>
+        <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)}
+          style={{ padding: "9px 14px", border: "1px solid #e5e7eb", borderRadius: 999, fontSize: 13, background: "white" }}>
+          <option value="all">All time</option>
+          {monthOptions.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
+        </select>
         <button onClick={load} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 14px", background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           <RefreshCw size={13} /> Refresh
+        </button>
+        <button onClick={exportPdf} disabled={exporting || filtered.length === 0}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", background: exporting || filtered.length === 0 ? "#e5e7eb" : "#f4a228", color: exporting || filtered.length === 0 ? "#9ca3af" : "white", border: "none", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: exporting || filtered.length === 0 ? "not-allowed" : "pointer" }}>
+          <FileDown size={14} /> {exporting ? "Generating…" : "Export PDF"}
         </button>
         <span style={{ fontSize: 12, color: "#9ca3af", marginLeft: "auto" }}>{filtered.length} of {log.length} entries</span>
       </div>

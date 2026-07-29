@@ -1,27 +1,23 @@
 import { blogPosts } from "./blog";
+import { readData } from "../lib/dataStore";
 
-// Server-side: read admin blog posts from dataStore
-let adminBlogPosts: Array<{
+export interface AdminBlogPost {
   id: string; slug: string; title: string; description: string;
   category: string; date: string; readTime: string; content: string;
   published: boolean; createdAt: string; updatedAt: string;
-}> = [];
-
-try {
-  // Only import on server side
-  if (typeof window === "undefined") {
-    const { readData } = require("../lib/dataStore");
-    const data = readData();
-    adminBlogPosts = (data.blogPosts || []).filter((p: { published: boolean }) => p.published !== false);
-  }
-} catch {}
-
-export function getAllBlogPosts() {
-  return [...adminBlogPosts, ...blogPosts];
 }
 
-export function getBlogPostBySlugAll(slug: string) {
-  const adminMatch = adminBlogPosts.find(p => p.slug === slug);
-  if (adminMatch) return adminMatch;
-  return blogPosts.find(p => p.slug === slug) || null;
+export async function getAllBlogPosts() {
+  try {
+    const data = await readData();
+    const adminBlogPosts = ((data.blogPosts || []) as AdminBlogPost[]).filter((p) => p.published !== false);
+    return [...adminBlogPosts, ...blogPosts];
+  } catch {
+    return [...blogPosts];
+  }
+}
+
+export async function getBlogPostBySlugAll(slug: string) {
+  const all = await getAllBlogPosts();
+  return all.find((p) => p.slug === slug) || null;
 }

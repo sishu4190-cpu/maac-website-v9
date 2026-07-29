@@ -6,24 +6,12 @@ import {
   Send, Upload, ChevronDown, CheckCircle, Star
 } from 'lucide-react';
 import { useSiteData } from '../../lib/useSiteData';
+import { getAllProducts } from '../../data/products';
 
-
-const products = [
-  'Ferrous Sulphate Heptahydrate', 'Ferrous Sulphate Semi Dry', 'Magnesium Sulphate',
-  'Zinc Sulphate Hepta', 'Zinc Sulphate Mono 33%', 'Copper Sulphate Pentahydrate',
-  'Boric Acid', 'Calcium Nitrate', 'Sodium Nitrate', 'Sodium Acetate Tri-Hydrate',
-  'Iron EDTA', 'Zinc EDTA', 'Calcium EDTA', 'Magnesium EDTA', 'Manganese EDTA',
-  'Copper EDTA', 'Fe EDDHA', 'Boron EDTA', 'Chelated EDTA', 'Amino Acid 80%',
-  'Ammonium Bi Fluoride Pure', 'Ammonium Fluoride', 'Potassium Fluoride',
-  'Sodium Fluoride', 'Sodium Cryolite', 'Potassium Cryolite', 'Calcium Fluoride',
-  'Phosphoric Acid', 'Sulfuric Acid', 'Hydrochloric Acid', 'Nitric Acid',
-  'Acetic Acid', 'Formic Acid', 'Oxalic Acid', 'Citric Acid',
-  'Ferrous Fumarate Pure Grade', 'Ferric Pyrophosphate', 'Fumaric Acid',
-  'Zinc Sulphate Mono Hydrate 36% USP Grade',
-  '19-19-19 NPK', '12-61-00 MAP', '00-52-34 MKP', '13-00-45 Potassium Nitrate',
-  '00-00-50 Potassium Sulphate', '00-00-60 Potassium Chloride',
-  'Other / Not Listed'
-];
+// Derived from app/data/products.ts so every product in the catalogue
+// (including anything added later) is always selectable here — no more
+// manually keeping a second list in sync.
+const products = [...getAllProducts().map((p) => p.name), 'Other / Not Listed'];
 
 const packagingOptions = ['25 kg Bag', '50 kg Bag', 'Jumbo Bag (500 kg)', 'Jumbo Bag (1000 kg)', 'IBC / Drum', 'Bulk / Tanker', 'As Per Requirement'];
 
@@ -46,6 +34,9 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // Open WhatsApp immediately (before any await) so browsers don't treat
+    // it as a blocked popup — it must fire synchronously within the click.
+    openWhatsAppWithEnquiry();
     try {
       const res = await fetch('/api/enquiry', {
         method: 'POST',
@@ -58,6 +49,25 @@ export default function ContactPage() {
       setSubmitted(true);
     }
     setLoading(false);
+  };
+
+  // Opens a pre-filled WhatsApp chat to our team with the enquiry details,
+  // one tap away from sending — same wa.me redirect pattern used by the
+  // WhatsApp buttons elsewhere on the site.
+  const openWhatsAppWithEnquiry = () => {
+    const lines = [
+      `New enquiry from the website:`,
+      `Name: ${formData.name}`,
+      `Company: ${formData.company}`,
+      `Mobile: ${formData.mobile}`,
+      formData.product ? `Product: ${formData.product}` : '',
+      formData.quantity ? `Quantity: ${formData.quantity}` : '',
+      formData.deliveryLocation ? `Location: ${formData.deliveryLocation}` : '',
+      formData.message ? `Message: ${formData.message}` : '',
+    ].filter(Boolean).join('\n');
+    const text = encodeURIComponent(lines);
+    const number = (wa || '919662088122');
+    window.open(`https://wa.me/${number}?text=${text}`, '_blank', 'noopener,noreferrer');
   };
 
   const contactSchema = {
@@ -186,7 +196,7 @@ export default function ContactPage() {
                   <CheckCircle className="w-12 h-12 text-freshGreen mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-deepGreen mb-2">Enquiry Received</h3>
                   <p className="text-gray-600 text-sm">Thank you for contacting Mangalam Acid and Chemicals. Our team will review your requirement and respond within one business day.</p>
-                  <p className="text-xs text-gray-500 mt-3">For urgent requirements, call us directly at <a href="tel:+919662088122" className="text-freshGreen font-semibold">+91 96620 88122</a></p>
+                  <p className="text-xs text-gray-500 mt-3">We've also opened WhatsApp in a new tab with your details pre-filled — just hit send for the fastest response, or call us directly at <a href="tel:+919662088122" className="text-freshGreen font-semibold">+91 96620 88122</a></p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">

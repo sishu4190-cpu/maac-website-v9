@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { categories } from "@/app/data/products";
+import { categories, getCrossLinkedProducts } from "@/app/data/products";
 import { ArrowRight, FlaskConical } from "lucide-react";
 
+const totalProducts = categories.reduce((s, c) => s + c.products.length, 0);
+
 export const metadata: Metadata = {
-  title: "Products | Industrial Chemicals, Sulphates, EDTA, Fluorides, Acids",
-  description: "Browse all chemical products from Mangalam Acid and Chemicals — sulphates, EDTA chelates, fluoride compounds, acids, NPK fertilizers, pharmaceutical chemicals. Bulk supply from Vapi, Gujarat.",
+  title: "Products | Sulphate, Nitrate, Chloride, Fertilizer, EDTA, Fluoride Chemicals",
+  description: `Browse all chemical products from Mangalam Acid and Chemicals — sulphate, nitrate, chloride, fertilizer, textile, water treatment, fluoride, industrial, EDTA and pharmaceuticals chemicals. Bulk supply from Vapi, Gujarat.`,
   alternates: { canonical: "https://mangalamchemicals.com/products" },
 };
 
@@ -14,7 +16,7 @@ export default function ProductsPage() {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: 'Products — Mangalam Acid and Chemicals',
-    description: 'Over 80 industrial and agro chemicals across 6 categories: sulphates, EDTA chelates, fluoride compounds, acids, NPK fertilizers, pharmaceutical chemicals.',
+    description: `${totalProducts}+ industrial and agro chemicals across ${categories.length} categories: sulphate, nitrate, chloride, fertilizer, textile, water treatment, fluoride, industrial, EDTA and pharmaceuticals chemicals.`,
     url: 'https://mangalamchemicals.com/products',
     mainEntity: {
       '@type': 'ItemList',
@@ -40,46 +42,60 @@ export default function ProductsPage() {
             <span className="text-white">Products</span>
           </nav>
           <h1 className="text-3xl md:text-4xl font-bold text-white">All Products</h1>
-          <p className="text-gray-300 mt-3 text-lg">Over 80 industrial and agro chemicals across 6 categories. Bulk supply from Vapi, Gujarat.</p>
+          <p className="text-gray-300 mt-3 text-lg">{totalProducts}+ industrial and agro chemicals across {categories.length} categories. Bulk supply from Vapi, Gujarat.</p>
         </div>
       </section>
 
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="space-y-14">
-            {categories.map((cat) => (
-              <div key={cat.id}>
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{cat.icon}</span>
-                    <div>
-                      <h2 className="text-xl font-bold" style={{ color: "#1a4d2e" }}>{cat.name}</h2>
-                      <p className="text-sm text-gray-500">{cat.tagline} · {cat.products.length} products</p>
-                    </div>
-                  </div>
-                  <Link href={`/products/${cat.slug}`} className="hidden md:flex items-center gap-1 text-sm font-semibold" style={{ color: "#1a4d2e" }}>
-                    View Category <ArrowRight size={14} />
-                  </Link>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {cat.products.map((product) => (
-                    <Link key={product.id} href={`/products/${cat.slug}/${product.id}`} className="product-card card-hover group flex items-start gap-2 p-3">
-                      <FlaskConical size={15} className="mt-0.5 shrink-0" style={{ color: "#4caf50" }} />
+            {categories.map((cat) => {
+              const isCrossRef = Boolean(cat.crossLinks && cat.crossLinks.length > 0);
+              const crossLinked = isCrossRef ? getCrossLinkedProducts(cat) : [];
+              return (
+                <div key={cat.id}>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">{cat.icon}</span>
                       <div>
-                        <div className="text-sm font-semibold leading-tight" style={{ color: "#1a2e1c" }}>{product.name}</div>
-                        {product.cas && <div className="text-xs text-gray-400 mt-0.5">CAS: {product.cas}</div>}
+                        <h2 className="text-xl font-bold" style={{ color: "#1a4d2e" }}>{cat.name}</h2>
+                        <p className="text-sm text-gray-500">{cat.tagline} · {isCrossRef ? `${crossLinked.length} featured uses` : `${cat.products.length} products`}</p>
                       </div>
+                    </div>
+                    <Link href={`/products/${cat.slug}`} className="hidden md:flex items-center gap-1 text-sm font-semibold" style={{ color: "#1a4d2e" }}>
+                      View Category <ArrowRight size={14} />
                     </Link>
-                  ))}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {isCrossRef
+                      ? crossLinked.map(({ product, ownerSlug }) => (
+                          <Link key={product.id} href={`/products/${ownerSlug}/${product.id}`} className="product-card card-hover group flex items-start gap-2 p-3">
+                            <FlaskConical size={15} className="mt-0.5 shrink-0" style={{ color: "#4caf50" }} />
+                            <div>
+                              <div className="text-sm font-semibold leading-tight" style={{ color: "#1a2e1c" }}>{product.name}</div>
+                              {product.cas && <div className="text-xs text-gray-400 mt-0.5">CAS: {product.cas}</div>}
+                            </div>
+                          </Link>
+                        ))
+                      : cat.products.map((product) => (
+                          <Link key={product.id} href={`/products/${cat.slug}/${product.id}`} className="product-card card-hover group flex items-start gap-2 p-3">
+                            <FlaskConical size={15} className="mt-0.5 shrink-0" style={{ color: "#4caf50" }} />
+                            <div>
+                              <div className="text-sm font-semibold leading-tight" style={{ color: "#1a2e1c" }}>{product.name}</div>
+                              {product.cas && <div className="text-xs text-gray-400 mt-0.5">CAS: {product.cas}</div>}
+                            </div>
+                          </Link>
+                        ))}
+                  </div>
+                  <div className="mt-4">
+                    <Link href={`/products/${cat.slug}`} className="text-sm font-semibold flex items-center gap-1" style={{ color: "#1a4d2e" }}>
+                      View {cat.name} details <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                  <div className="border-t border-gray-100 mt-8"></div>
                 </div>
-                <div className="mt-4">
-                  <Link href={`/products/${cat.slug}`} className="text-sm font-semibold flex items-center gap-1" style={{ color: "#1a4d2e" }}>
-                    View {cat.name} details <ArrowRight size={13} />
-                  </Link>
-                </div>
-                <div className="border-t border-gray-100 mt-8"></div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

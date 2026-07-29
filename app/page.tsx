@@ -2,75 +2,52 @@ import Link from "next/link";
 import { CheckCircle, Award, Truck, Users, ArrowRight, Download, Shield, FlaskConical } from "lucide-react";
 import type { Metadata } from "next";
 import HomeClient from "./components/HomeClient";
+import { categories } from "./data/products";
 
 export const metadata: Metadata = {
   title: "Mangalam Acid and Chemicals | Industrial Chemical Supplier, Vapi, Gujarat",
-  description: "Mangalam Acid and Chemicals is a Vapi, Gujarat-based supplier and exporter of industrial and agro chemicals. Sulphates, EDTA chelates, fluoride compounds, acids, NPK fertilizers. ISO 9001:2015 certified. Bulk supply across India.",
+  description: "Mangalam Acid and Chemicals is a Vapi, Gujarat-based manufacturer, supplier and exporter of sulphate, nitrate, chloride, fertilizer, textile, water treatment, fluoride, industrial, EDTA and pharmaceuticals chemicals. ISO 9001:2015 certified. Bulk supply across India.",
   alternates: { canonical: "https://mangalamchemicals.com" },
 };
 
-const productCategories = [
-  {
-    id: "sulphates-fertilizers",
-    name: "Sulphates & Fertilizers",
-    count: 20,
-    desc: "Ferrous sulphate, zinc sulphate, magnesium sulphate, copper sulphate, nitrates, and more.",
-    icon: "🌱",
-    href: "/products/sulphates-fertilizers",
-    bg: "#2d5a1b",
-    image: "/assets/maac-media/images/categories/sulphates-fertilizers.jpg",
-  },
-  {
-    id: "edta-chelated",
-    name: "EDTA & Chelated Products",
-    count: 18,
-    desc: "Iron EDTA, zinc EDTA, Fe EDDHA, amino acids, and specialty chelated micronutrients.",
-    icon: "🔬",
-    href: "/products/edta-chelated-products",
-    bg: "#1a3d4d",
-    image: "/assets/maac-media/images/categories/edta-chelated-products.jpg",
-  },
-  {
-    id: "fluoride-base",
-    name: "Fluoride Base Products",
-    count: 23,
-    desc: "Ammonium, potassium, sodium fluoride compounds for metallurgy, glass, and ceramics.",
-    icon: "⚗️",
-    href: "/products/fluoride-base-products",
-    bg: "#3d2d1a",
-    image: "/assets/maac-media/images/categories/fluoride-base-products.png",
-  },
-  {
-    id: "acids",
-    name: "Acids",
-    count: 10,
-    desc: "Phosphoric acid, sulphuric acid, hydrochloric acid, nitric acid, formic acid, and more.",
-    icon: "🧪",
-    href: "/products/acids",
-    bg: "#2d1a3d",
-    image: "/assets/maac-media/images/categories/acids.png",
-  },
-  {
-    id: "pharmaceutical",
-    name: "Pharmaceutical Products",
-    count: 4,
-    desc: "USP grade ferrous fumarate, zinc sulphate monohydrate, ferric pyrophosphate.",
-    icon: "💊",
-    href: "/products/pharmaceutical-products",
-    bg: "#1a2d4d",
-    image: "/assets/maac-media/images/categories/pharmaceutical-products.png",
-  },
-  {
-    id: "npk-fertilizers",
-    name: "NPK Fertilizers",
-    count: 8,
-    desc: "19-19-19, potassium nitrate, MAP, MKP, potassium sulphate, and balanced NPK grades.",
-    icon: "🌾",
-    href: "/products/npk-fertilizers",
-    bg: "#1a4d2e",
-    image: "/assets/maac-media/images/categories/npk-fertilizers.png",
-  },
-];
+export const dynamic = "force-dynamic";
+
+// Presentation-only metadata (icon / card colour / photo) for each product
+// category. The actual category list, product counts and descriptions come
+// straight from app/data/products.ts so the homepage can never drift out of
+// sync with the real product catalogue — add a category there and it shows
+// up here automatically (falls back to a plain colour card with no photo).
+const CATEGORY_PRESENTATION: Record<string, { bg: string; image?: string; shortDesc: string }> = {
+  "sulphate-chemicals": { bg: "#2d5a1b", image: "/assets/maac-media/images/categories/sulphates-fertilizers.jpg", shortDesc: "Ferrous, zinc, copper, magnesium, manganese, nickel and ammonium sulphates." },
+  "nitrate-chemicals": { bg: "#1a4d6b", image: "/assets/maac-media/images/categories/sulphates-fertilizers.jpg", shortDesc: "Calcium nitrate, sodium nitrate and copper nitrate for fertigation and industry." },
+  "chloride-chemicals": { bg: "#3d1a1a", shortDesc: "Calcium chloride, nickel chloride and copper chloride for industrial use." },
+  "fertilizer-chemicals": { bg: "#1a4d2e", image: "/assets/maac-media/images/categories/npk-fertilizers.png", shortDesc: "NPK grades, MAP, MKP, boron grades, amino acids and biostimulants." },
+  "textile-chemicals": { bg: "#4d3d1a", image: "/assets/maac-media/images/categories/acids.png", shortDesc: "Acetic acid, formic acid, oxalic acid and sodium acetate for dyeing & finishing." },
+  "water-treatment-chemicals": { bg: "#123a4d", shortDesc: "Sulphates, chlorides and fluorides used across municipal & industrial water treatment." },
+  "fluoride-chemicals": { bg: "#3d2d1a", image: "/assets/maac-media/images/categories/fluoride-base-products.png", shortDesc: "Ammonium, potassium, sodium fluoride compounds for metallurgy, glass & ceramics." },
+  "industrial-chemicals": { bg: "#2d1a3d", image: "/assets/maac-media/images/categories/acids.png", shortDesc: "Phosphoric, sulphuric, nitric & hydrochloric acid and industrial process salts." },
+  "edta-chemicals": { bg: "#1a3d4d", image: "/assets/maac-media/images/categories/edta-chelated-products.jpg", shortDesc: "Iron, zinc, calcium, magnesium EDTA and Fe EDDHA chelated micronutrients." },
+  "pharmaceuticals-chemicals": { bg: "#1a2d4d", image: "/assets/maac-media/images/categories/pharmaceutical-products.png", shortDesc: "USP/IP grade ferrous fumarate, zinc sulphate monohydrate, ferric pyrophosphate." },
+};
+
+const productCategories = categories.map((cat) => {
+  const pres = CATEGORY_PRESENTATION[cat.slug] || { bg: "#1a4d2e", shortDesc: cat.tagline };
+  const isCrossRef = Boolean(cat.crossLinks && cat.crossLinks.length > 0);
+  return {
+    id: cat.id,
+    name: cat.name,
+    count: isCrossRef ? cat.crossLinks!.length : cat.products.length,
+    countLabel: isCrossRef ? "Featured Uses" : "Products",
+    desc: pres.shortDesc,
+    icon: cat.icon,
+    href: `/products/${cat.slug}`,
+    bg: pres.bg,
+    image: pres.image,
+  };
+});
+
+const totalProducts = categories.reduce((sum, c) => sum + c.products.length, 0);
+const totalCategories = categories.length;
 
 const whyUs = [
   { icon: <Award size={26} />, title: "ISO Certified Quality", desc: "ISO 9001:2015 and ISO 45001:2018 certified. Every batch available with COA on request.", color: "#f4a228" },
@@ -87,12 +64,12 @@ const industries = [
 ];
 
 const featuredProducts = [
-  { name: "Zinc Sulphate Heptahydrate 21%", category: "Sulphates & Fertilizers", use: "Zinc micronutrient for crops", href: "/products/sulphates-fertilizers/zinc-sulphate-hepta", icon: "🌱" },
-  { name: "Ferrous Sulphate Heptahydrate", category: "Sulphates & Fertilizers", use: "Iron fertilizer & water treatment", href: "/products/sulphates-fertilizers/ferrous-sulphate-heptahydrate", icon: "⚗️" },
-  { name: "Iron EDTA", category: "EDTA & Chelated", use: "Chelated iron for foliar & drip use", href: "/products/edta-chelated-products/iron-edta", icon: "🔬" },
-  { name: "NPK 19-19-19", category: "NPK Fertilizers", use: "Balanced water-soluble NPK for fertigation", href: "/products/npk-fertilizers/npk-19-19-19", icon: "🌾" },
-  { name: "Phosphoric Acid", category: "Acids", use: "Fertilizer, food & industrial processes", href: "/products/acids/phosphoric-acid", icon: "🧪" },
-  { name: "Calcium Nitrate", category: "Sulphates & Fertilizers", use: "Water-soluble Ca+N for fertigation", href: "/products/sulphates-fertilizers/calcium-nitrate", icon: "💧" },
+  { name: "Zinc Sulphate Heptahydrate 21%", category: "Sulphate Chemicals", use: "Zinc micronutrient for crops", href: "/products/sulphate-chemicals/zinc-sulphate-hepta", icon: "🌱" },
+  { name: "Ferrous Sulphate Heptahydrate", category: "Sulphate Chemicals", use: "Iron fertilizer & water treatment", href: "/products/sulphate-chemicals/ferrous-sulphate-heptahydrate", icon: "⚗️" },
+  { name: "Iron EDTA", category: "EDTA Chemicals", use: "Chelated iron for foliar & drip use", href: "/products/edta-chemicals/iron-edta", icon: "🔬" },
+  { name: "NPK 19-19-19", category: "Fertilizer Chemicals", use: "Balanced water-soluble NPK for fertigation", href: "/products/fertilizer-chemicals/npk-19-19-19", icon: "🌾" },
+  { name: "Phosphoric Acid", category: "Industrial Chemicals", use: "Fertilizer, food & industrial processes", href: "/products/industrial-chemicals/phosphoric-acid", icon: "🧪" },
+  { name: "Calcium Nitrate", category: "Nitrate Chemicals", use: "Water-soluble Ca+N for fertigation", href: "/products/nitrate-chemicals/calcium-nitrate", icon: "💧" },
 ];
 
 const enquirySteps = [
@@ -108,22 +85,41 @@ const blogPosts = [
   { title: "Difference Between Industrial Grade and Fertilizer Grade Chemicals", slug: "industrial-grade-vs-fertilizer-grade-chemicals", date: "May 2025", readTime: "5 min", tag: "Buying Guide" },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const { readData } = await import("./lib/dataStore");
+  const { heroImage, heroVideo } = await readData();
+
   return (
     <>
       {/* ── Hero section with video background ─────────────── */}
       <section className="relative overflow-hidden" style={{ minHeight: "92vh", display: "flex", alignItems: "center" }}>
-        {/* Hero background image */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/assets/maac-media/images/hero-office-gate.jpg"
-          alt=""
-          aria-hidden="true"
-          style={{
-            position: "absolute", inset: 0, width: "100%", height: "100%",
-            objectFit: "cover", zIndex: 0,
-          }}
-        />
+        {/* Hero background: video if the admin has uploaded one, else the static image */}
+        {heroVideo ? (
+          <video
+            src={heroVideo}
+            poster={heroImage}
+            autoPlay
+            muted
+            loop
+            playsInline
+            aria-hidden="true"
+            style={{
+              position: "absolute", inset: 0, width: "100%", height: "100%",
+              objectFit: "cover", zIndex: 0,
+            }}
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={heroImage}
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: "absolute", inset: 0, width: "100%", height: "100%",
+              objectFit: "cover", zIndex: 0,
+            }}
+          />
+        )}
         {/* Dark overlay for text readability */}
         <div style={{
           position: "absolute", inset: 0, zIndex: 1,
@@ -171,6 +167,8 @@ export default function Home() {
       {/* ── Stats section with count-up ─────────────────────── */}
       <HomeClient
         productCategories={productCategories}
+        totalProducts={totalProducts}
+        totalCategories={totalCategories}
         whyUs={whyUs}
         industries={industries}
         featuredProducts={featuredProducts}

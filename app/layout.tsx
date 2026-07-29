@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     url: "https://mangalamchemicals.com",
     siteName: "Mangalam Acid and Chemicals",
     title: "Mangalam Acid and Chemicals | Chemical Supplier, Vapi Gujarat",
-    description: "ISO 9001:2015 certified bulk chemical supplier in Vapi, Gujarat. 80+ products across 6 categories. Pan-India supply with COA.",
+    description: "ISO 9001:2015 certified bulk chemical supplier in Vapi, Gujarat. 100+ products across 10 categories. Pan-India supply with COA.",
     images: [{ url: "/assets/maac-media/images/maac-logo-full.webp", width: 1200, height: 630, alt: "Mangalam Acid and Chemicals" }],
   },
   twitter: {
@@ -100,8 +100,9 @@ const orgSchema = {
     { "@type": "EducationalOccupationalCredential", credentialCategory: "certification", name: "ISO 45001:2018", recognizedBy: { "@type": "Organization", name: "Bureau Veritas" }, validThrough: "2028-05-11" },
   ],
   knowsAbout: [
-    "Sulphates & Fertilizer Chemicals", "EDTA Chelated Micronutrients", "Fluoride Compounds",
-    "Industrial Acids", "Pharmaceutical Chemicals", "NPK Fertilizers", "Chemical Export India",
+    "Sulphate Chemicals", "Nitrate Chemicals", "Chloride Chemicals", "Fertilizer Chemicals",
+    "Textile Chemicals", "Water Treatment Chemicals", "Fluoride Chemicals", "Industrial Chemicals",
+    "EDTA Chelated Micronutrients", "Pharmaceuticals Chemicals", "Chemical Export India",
   ],
 };
 
@@ -139,7 +140,10 @@ const localBusinessSchema = {
     { "@type": "State", name: "Madhya Pradesh" },
     { "@type": "State", name: "Punjab" },
   ],
-  aggregateRating: { "@type": "AggregateRating", ratingValue: "4.8", reviewCount: "120", bestRating: "5" },
+  // Note: no aggregateRating here on purpose — Google requires review-snippet
+  // structured data to reflect real, verifiable reviews (e.g. synced from
+  // Google Business Profile or IndiaMART), otherwise it risks a manual
+  // spam action. Add it back once genuine review data is available.
   hasMap: "https://maps.google.com/?q=Vapi+INA+Gujarat+India",
   keywords: "chemical supplier vapi, industrial chemicals gujarat, sulphate supplier, EDTA chelated products, bulk chemical exporter india",
 };
@@ -150,7 +154,7 @@ const websiteSchema = {
   "@id": "https://mangalamchemicals.com/#website",
   url: "https://mangalamchemicals.com",
   name: "Mangalam Acid and Chemicals",
-  description: "ISO certified bulk chemical supplier in Vapi, Gujarat. 80+ industrial and agro chemicals.",
+  description: "ISO certified bulk chemical supplier in Vapi, Gujarat. 100+ industrial and agro chemicals.",
   publisher: { "@id": "https://mangalamchemicals.com/#organization" },
   potentialAction: {
     "@type": "SearchAction",

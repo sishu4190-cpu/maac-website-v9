@@ -3,19 +3,21 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Calendar, Clock, ArrowLeft, ArrowRight, BookOpen, ChevronRight } from 'lucide-react';
 import { getAllBlogPosts, getBlogPostBySlugAll as getBlogPostBySlug } from '../../../data/getAllBlogPosts';
-const blogPosts = getAllBlogPosts();
+
+export const dynamic = 'force-dynamic';
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateStaticParams() {
+  const blogPosts = await getAllBlogPosts();
   return blogPosts.map(post => ({ slug: post.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const post = getBlogPostBySlug(slug);
+  const post = await getBlogPostBySlug(slug);
   if (!post) return { title: 'Article Not Found' };
   return {
     title: `${post.title} | Mangalam Acid and Chemicals`,
@@ -56,9 +58,10 @@ function markdownToHtml(content: string): string {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const post = getBlogPostBySlug(slug);
+  const post = await getBlogPostBySlug(slug);
   if (!post) notFound();
 
+  const blogPosts = await getAllBlogPosts();
   const currentIndex = blogPosts.findIndex(p => p.slug === slug);
   const prevPost = currentIndex < blogPosts.length - 1 ? blogPosts[currentIndex + 1] : null;
   const nextPost = currentIndex > 0 ? blogPosts[currentIndex - 1] : null;

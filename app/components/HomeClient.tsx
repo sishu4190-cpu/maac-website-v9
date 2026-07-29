@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Download, Phone } from "lucide-react";
 import type { ReactNode } from "react";
 
-interface Category { id: string; name: string; count: number; desc: string; icon: string; href: string; bg: string; image?: string; }
+interface Category { id: string; name: string; count: number; countLabel?: string; desc: string; icon: string; href: string; bg: string; image?: string; }
 interface WhyUsItem { icon: ReactNode; title: string; desc: string; color: string; }
 interface FeaturedProduct { name: string; category: string; use: string; href: string; icon: string; }
 interface EnquiryStep { step: string; title: string; desc: string; tooltip: string; icon: string; }
@@ -12,6 +12,8 @@ interface BlogPost { title: string; slug: string; date: string; readTime: string
 
 interface Props {
   productCategories: Category[];
+  totalProducts: number;
+  totalCategories: number;
   whyUs: WhyUsItem[];
   industries: string[];
   featuredProducts: FeaturedProduct[];
@@ -37,12 +39,12 @@ function useCountUp(target: number, duration = 1600, start = false) {
   return count;
 }
 
-export default function HomeClient({ productCategories, whyUs, industries, featuredProducts, enquirySteps, blogPosts }: Props) {
+export default function HomeClient({ productCategories, totalProducts, totalCategories, whyUs, industries, featuredProducts, enquirySteps, blogPosts }: Props) {
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsVisible, setStatsVisible] = useState(false);
 
-  const cats = useCountUp(6, 1200, statsVisible);
-  const prods = useCountUp(80, 1400, statsVisible);
+  const cats = useCountUp(totalCategories, 1200, statsVisible);
+  const prods = useCountUp(totalProducts, 1400, statsVisible);
   const inds = useCountUp(12, 1200, statsVisible);
 
   useEffect(() => {
@@ -86,8 +88,8 @@ export default function HomeClient({ productCategories, whyUs, industries, featu
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12 reveal">
             <div className="section-label">What We Supply</div>
-            <h2 className="section-title">6 Major Product Categories</h2>
-            <p className="section-subtitle max-w-2xl mx-auto">Industrial, agricultural, pharmaceutical, and specialty chemicals — all under one verified supplier.</p>
+            <h2 className="section-title">{totalCategories} Major Product Categories</h2>
+            <p className="section-subtitle max-w-2xl mx-auto">Manufacturer, supplier and exporter of sulphate, nitrate, chloride, fertilizer, textile, water treatment, fluoride, industrial, EDTA and pharmaceuticals chemicals — all under one verified supplier.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
             {productCategories.map((cat) => (
@@ -110,7 +112,7 @@ export default function HomeClient({ productCategories, whyUs, industries, featu
                       background: "rgba(244,162,40,0.2)", color: "#f9c06a",
                       border: "1px solid rgba(244,162,40,0.3)",
                     }}>
-                      {cat.count}+ Products
+                      {cat.count}+ {cat.countLabel || "Products"}
                     </span>
                     <h3 className="text-white font-bold text-lg mt-3 leading-snug">{cat.name}</h3>
                     <p style={{ color: "rgba(255,255,255,0.72)", fontSize: 13, lineHeight: 1.6, marginTop: 8 }}>{cat.desc}</p>

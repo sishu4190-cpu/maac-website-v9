@@ -256,7 +256,7 @@ export default function BlogAdmin() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16, alignItems: "start" }}>
+      <div className="admin-2col">
         {/* Main editor */}
         <div style={{ background: "white", borderRadius: 12, padding: 24, border: "1px solid #f1f5f9" }}>
           {inp("Post Title", "title", true)}

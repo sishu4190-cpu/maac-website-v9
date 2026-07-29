@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { readData } from '@/app/lib/dataStore';
 
 export async function GET() {
-  const data = readData();
+  const data = await readData();
   return NextResponse.json({
     contact: {
       phones: data.contact.phones,
@@ -17,5 +17,8 @@ export async function GET() {
     },
     settings: data.settings,
     catalogueFile: data.catalogueFile,
+    heroImage: data.heroImage,
+    heroVideo: data.heroVideo || null,
+    socialEmbedCode: data.socialEmbedCode || '',
   }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
 }

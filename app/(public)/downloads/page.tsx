@@ -15,9 +15,17 @@ const documents = [
     items: [
       {
         name: 'Product Catalogue 2025',
-        desc: 'Complete catalogue of 80+ chemicals across 6 categories — sulphates, EDTA, fluorides, acids, pharma, NPK.',
+        desc: 'Complete catalogue of 100+ chemicals across 10 categories — sulphate, nitrate, chloride, fertilizer, textile, water treatment, fluoride, industrial, EDTA and pharmaceuticals.',
         file: '/assets/maac-media/certificates/MAAC-Product-Catalogue.pdf',
         icon: '📘',
+        size: 'PDF',
+        type: 'Download',
+      },
+      {
+        name: 'Export Product Catalogue',
+        desc: 'Product list formatted for international/export buyers — IEC holder, DGFT registered.',
+        file: '/assets/maac-media/certificates/MAAC-Product-Catalogue-Export.pdf',
+        icon: '🌏',
         size: 'PDF',
         type: 'Download',
       },
@@ -104,15 +112,13 @@ const documents = [
   },
 ];
 
-export default function DownloadsPage() {
+export default async function DownloadsPage() {
   // Read dynamic catalogue file from admin
   let catalogueFile = '/assets/maac-media/certificates/MAAC-Product-Catalogue.pdf';
   try {
-    if (typeof window === 'undefined') {
-      const { readData } = require('@/app/lib/dataStore');
-      const d = readData();
-      if (d.catalogueFile) catalogueFile = d.catalogueFile;
-    }
+    const { readData } = await import('@/app/lib/dataStore');
+    const d = await readData();
+    if (d.catalogueFile) catalogueFile = d.catalogueFile;
   } catch {}
   // Patch catalogue file dynamically
   const allDocs = documents.map(section => ({

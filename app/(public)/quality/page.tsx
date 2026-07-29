@@ -19,7 +19,7 @@ const qualityPoints = [
   { icon: Shield, title: 'Grade Compliance', desc: 'Products supplied in the grade requested — Technical, Industrial, Agricultural, or Pharmaceutical.' },
   { icon: Award, title: 'Consistent Supply', desc: 'Bulk supply from verified manufacturers with consistent batch quality and documentation to match.' },
   { icon: ClipboardCheck, title: 'Documentation Support', desc: 'Full procurement documentation support including COA, product catalogue, and certificates on request.' },
-  { icon: Download, title: 'Product Catalogue', desc: 'Full product catalogue available for download covering all six chemical categories and 80+ products.' },
+  { icon: Download, title: 'Product Catalogue', desc: 'Full product catalogue available for download covering all ten chemical categories and 100+ products.' },
 ];
 
 const faq = [
@@ -30,8 +30,8 @@ const faq = [
   { q: 'Can you supply chemicals that require export documentation?', a: 'Yes. We hold a valid IEC (Import-Export Code: ABPFM7919L) and can supply chemicals for export. Contact us with your product and destination country for available documentation and compliance requirements.' },
 ];
 
-export default function QualityPage() {
-  const activeCertifications = getActiveCertifications();
+export default async function QualityPage() {
+  const activeCertifications = await getActiveCertifications();
 
   const faqSchema = {
     '@context': 'https://schema.org',
@@ -153,7 +153,7 @@ export default function QualityPage() {
               <div className="mt-8 space-y-4">
                 {[
                   { label: 'Certificate of Analysis (COA)', note: 'Available on request for every batch' },
-                  { label: 'Product Catalogue (PDF)', note: '80+ products across 6 categories', dl: '/assets/maac-media/certificates/MAAC-Product-Catalogue.pdf' },
+                  { label: 'Product Catalogue (PDF)', note: '100+ products across 10 categories', dl: '/assets/maac-media/certificates/MAAC-Product-Catalogue.pdf' },
                   { label: 'GST Registration Certificate', note: 'GSTIN: 24ABPFM7919L1ZK', dl: '/assets/maac-media/certificates/GST-Certificate.pdf' },
                   { label: 'ISO 9001:2015 Certificate', note: 'Cert No: IN59785A', dl: '/assets/maac-media/certificates/ISO-9001-2015.pdf' },
                   { label: 'ISO 45001:2018 Certificate', note: 'Cert No: IN59785C-1', dl: '/assets/maac-media/certificates/ISO-45001-2018.pdf' },

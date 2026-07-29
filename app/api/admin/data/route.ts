@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readData, writeData, logActivity, Enquiry } from '@/app/lib/dataStore';
 
-function isAuthorized(req: NextRequest): boolean {
+async function isAuthorized(req: NextRequest): Promise<boolean> {
   const token = req.headers.get('x-admin-token') || '';
-  const data = readData();
+  const data = await readData();
   const adminPass = data.adminPassword || process.env.ADMIN_PASSWORD || 'MAAC@2026#Admin';
   return token === adminPass || token === 'maac-admin-dev' || (token.length > 8);
 }
@@ -16,6 +16,10 @@ function describeAction(section: string, payload: Record<string, unknown> = {}):
   switch (section) {
     case 'contact': return { label: 'Updated contact details', detail: 'Phones, emails, address or social links changed' };
     case 'settings': return { label: 'Updated site settings', detail: s(payload.siteName) || 'Site name / meta settings changed' };
+    case 'hero_image_save': return { label: 'Changed homepage background image', detail: '' };
+    case 'hero_video_save': return { label: 'Changed homepage background video', detail: '' };
+    case 'hero_video_reset': return { label: 'Removed homepage background video', detail: 'Reverted to static image' };
+    case 'social_embed_save': return { label: 'Updated Social Media page embed', detail: '' };
     case 'enquiry_status': return { label: 'Updated enquiry status', detail: `Enquiry ${s(payload.id, 30)} → "${s(payload.status)}"` };
     case 'enquiry_notes': return { label: 'Added enquiry note', detail: `Enquiry ${s(payload.id, 30)}` };
     case 'enquiry_delete': return { label: 'Deleted an enquiry', detail: `Enquiry ${s(payload.id, 30)}` };
@@ -48,17 +52,17 @@ function describeAction(section: string, payload: Record<string, unknown> = {}):
 }
 
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const data = readData();
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const data = await readData();
   return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const { section, payload } = await req.json();
-    const data = readData();
+    const data = await readData();
 
     switch (section) {
       case 'contact':
@@ -66,6 +70,18 @@ export async function POST(req: NextRequest) {
         break;
       case 'settings':
         data.settings = { ...data.settings, ...payload };
+        break;
+      case 'hero_image_save':
+        data.heroImage = payload.heroImage;
+        break;
+      case 'hero_video_save':
+        data.heroVideo = payload.heroVideo;
+        break;
+      case 'hero_video_reset':
+        data.heroVideo = null;
+        break;
+      case 'social_embed_save':
+        data.socialEmbedCode = payload.socialEmbedCode || '';
         break;
 
       case 'add_enquiry':
@@ -205,7 +221,7 @@ export async function POST(req: NextRequest) {
         data.otpData = { ...otpData, used: true };
         data.adminPassword = payload.newPassword;
         logActivity(data, 'password_reset_otp_verify', 'Reset admin password', 'Via Forgot Password → Email OTP');
-        writeData(data);
+        await writeData(data);
         return NextResponse.json({ success: true, message: 'Password reset successfully.' });
       }
 
@@ -218,7 +234,7 @@ export async function POST(req: NextRequest) {
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         data.otpData = { otp, expires: Date.now() + 10 * 60 * 1000, used: false };
-        writeData(data);
+        await writeData(data);
 
         try {
           const { sendOtpEmail } = await import('@/app/lib/email');
@@ -248,7 +264,13 @@ export async function POST(req: NextRequest) {
     const { label, detail } = describeAction(section, payload);
     logActivity(data, section, label, detail);
 
-    const saved = writeData(data);
+    const saved = await writeData(data);
+    if (!saved) {
+      return NextResponse.json(
+        { success: false, error: 'Could not save — storage is not reachable. Please try again or contact support.' },
+        { status: 500, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
     return NextResponse.json({ success: true, saved, data }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     console.error('[admin/data POST]', e);

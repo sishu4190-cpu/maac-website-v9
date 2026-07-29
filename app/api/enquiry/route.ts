@@ -31,22 +31,36 @@ export async function POST(request: NextRequest) {
     };
 
     // Save to admin-data.json
-    const data = readData();
+    const data = await readData();
     data.enquiries.unshift(enquiry);
-    writeData(data);
+    await writeData(data);
 
     // Console log for development
     console.log('[MAAC Enquiry]', enquiry.id, enquiry.product, enquiry.company);
 
-    // Send email notification (does not block/fail the enquiry save if email fails)
-    try {
-      const { sendEnquiryEmail } = await import('@/app/lib/email');
-      const result = await sendEnquiryEmail(enquiry);
-      if (!result.success) {
-        console.warn('[MAAC Enquiry] Email notification failed:', result.error);
-      }
-    } catch (emailErr) {
-      console.warn('[MAAC Enquiry] Email notification threw:', emailErr);
+    // Send email + WhatsApp notifications in parallel — neither blocks/fails
+    // the enquiry save if it errors, and one failing doesn't stop the other.
+    const [emailResult, whatsappResult] = await Promise.allSettled([
+      (async () => {
+        const { sendEnquiryEmail } = await import('@/app/lib/email');
+        return sendEnquiryEmail(enquiry);
+      })(),
+      (async () => {
+        const { sendEnquiryWhatsApp } = await import('@/app/lib/whatsapp');
+        return sendEnquiryWhatsApp(enquiry);
+      })(),
+    ]);
+
+    if (emailResult.status === 'rejected') {
+      console.warn('[MAAC Enquiry] Email notification threw:', emailResult.reason);
+    } else if (!emailResult.value.success) {
+      console.warn('[MAAC Enquiry] Email notification failed:', emailResult.value.error);
+    }
+
+    if (whatsappResult.status === 'rejected') {
+      console.warn('[MAAC Enquiry] WhatsApp notification threw:', whatsappResult.reason);
+    } else if (!whatsappResult.value.success) {
+      console.warn('[MAAC Enquiry] WhatsApp notification failed for all numbers:', whatsappResult.value.results);
     }
 
     return NextResponse.json({

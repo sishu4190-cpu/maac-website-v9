@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
+import { put } from '@vercel/blob';
 import { readData } from '@/app/lib/dataStore';
 
-function isAuthorized(req: NextRequest): boolean {
+async function isAuthorized(req: NextRequest): Promise<boolean> {
   const token = req.headers.get('x-admin-token') || '';
-  const data = readData();
+  const data = await readData();
   const adminPass = data.adminPassword || process.env.ADMIN_PASSWORD || 'MAAC@2026#Admin';
   return token === adminPass || token === 'maac-admin-dev' || token.length > 8;
 }
 
+// Vercel's newer OIDC-based Blob connection sets BLOB_STORE_ID but not the
+// older BLOB_READ_WRITE_TOKEN, so check for either.
+const useBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
+
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const formData = await req.formData();
@@ -20,17 +25,29 @@ export async function POST(req: NextRequest) {
 
     if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    const uploadDir = join(process.cwd(), 'public', 'assets', 'uploads');
-    if (!existsSync(uploadDir)) mkdirSync(uploadDir, { recursive: true });
-
-    const ext = file.name.split('.').pop() || 'pdf';
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const fileName = `${type}-${Date.now()}-${safeName}`;
-    const filePath = join(uploadDir, fileName);
 
+    // On Vercel the local filesystem doesn't persist between requests, so
+    // uploaded files (gallery photos, certificate images, catalogue PDFs)
+    // are stored in Vercel Blob instead — which gives back a permanent
+    // public URL. Locally (npm run dev without Blob connected), fall back
+    // to writing into /public/assets/uploads so testing works without any
+    // cloud setup.
+    if (useBlob()) {
+      const blob = await put(`uploads/${fileName}`, file, {
+        access: 'public',
+        addRandomSuffix: false,
+        allowOverwrite: true,
+      });
+      return NextResponse.json({ success: true, path: blob.url, name: fileName });
+    }
+
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const uploadDir = join(process.cwd(), 'public', 'assets', 'uploads');
+    if (!existsSync(uploadDir)) mkdirSync(uploadDir, { recursive: true });
+    const filePath = join(uploadDir, fileName);
     writeFileSync(filePath, buffer);
     const publicPath = `/assets/uploads/${fileName}`;
 

@@ -5,14 +5,13 @@ import { categories, getCategoryBySlug, getProductById, getAllProducts } from "@
 import { getCoaUrl } from "@/app/data/coaMapping";
 import FAQAccordion from "@/app/components/FAQAccordion";
 import { CheckCircle, Package, FileText, ArrowRight, FlaskConical, Phone, Download } from "lucide-react";
+import ProductImageBox from "./ProductImageBox";
 
-function getProductOverride(productId: string) {
+async function getProductOverride(productId: string) {
   try {
-    if (typeof window === "undefined") {
-      const { readData } = require("@/app/lib/dataStore");
-      const data = readData();
-      return (data.productOverrides || {})[productId] || null;
-    }
+    const { readData } = await import("@/app/lib/dataStore");
+    const data = await readData();
+    return (data.productOverrides || {})[productId] || null;
   } catch {}
   return null;
 }
@@ -30,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   const cat = getCategoryBySlug(category);
   const product = cat?.products.find((p) => p.id === productId);
   if (!cat || !product) return { title: "Product Not Found" };
-  const override = getProductOverride(productId);
+  const override = await getProductOverride(productId);
   const name = override?.name || product.name;
   const desc = override?.description || product.description;
   return {
@@ -45,7 +44,7 @@ export default async function ProductPage({ params }: { params: Promise<{ catego
   const cat = getCategoryBySlug(category);
   const baseProduct = cat?.products.find((p) => p.id === productId);
   if (!cat || !baseProduct) notFound();
-  const override = getProductOverride(productId);
+  const override = await getProductOverride(productId);
   const product = {
     ...baseProduct,
     name: override?.name || baseProduct.name,
@@ -55,6 +54,7 @@ export default async function ProductPage({ params }: { params: Promise<{ catego
     specifications: override?.specifications || baseProduct.specifications,
     applications: override?.applications || baseProduct.applications,
     packaging: override?.packaging || baseProduct.packaging,
+    image: (override?.image as string | null | undefined) || null,
   };
 
   const relatedProducts = product.relatedProducts
@@ -119,10 +119,8 @@ export default async function ProductPage({ params }: { params: Promise<{ catego
             <span>/</span>
             <span className="text-white">{product.name}</span>
           </nav>
-          <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl" style={{ backgroundColor: "#1a4d2e" }}>
-              <FlaskConical size={28} style={{ color: "#81c784" }} />
-            </div>
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+            <ProductImageBox image={product.image} productName={product.name} />
             <div>
               <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: "rgba(244,162,40,0.2)", color: "#f9c06a" }}>{cat.name}</span>
               <h1 className="text-2xl md:text-3xl font-bold text-white mt-2">{product.name}</h1>

@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import AdminShell from "../lib/AdminShell";
 import { adminGet, adminPost } from "../lib/api";
+import { uploadFile } from "../lib/upload";
 import { Upload, Trash2, Save, RefreshCw, CheckCircle, AlertCircle, Plus, Edit2, X, Download, GripVertical } from "lucide-react";
 
 const DEFAULT_CERTS = [
@@ -52,16 +53,9 @@ export default function CertificatesPage() {
     if (file.type !== "application/pdf") { setError("Only PDF files are allowed."); return; }
     setError(""); setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", `cert-${certId}`);
-      const token = sessionStorage.getItem("maac_admin_token") || "";
-      const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-admin-token": token }, body: formData });
-      const data = await res.json();
-      if (data.success) {
-        setEditing(prev => prev ? { ...prev, file: data.path } : null);
-      } else setError(data.error || "Upload failed.");
-    } catch { setError("Upload failed."); }
+      const path = await uploadFile(file, `cert-${certId}`);
+      setEditing(prev => prev ? { ...prev, file: path } : null);
+    } catch (e) { setError(e instanceof Error ? e.message : "Upload failed."); }
     setUploading(false);
   };
 
@@ -70,16 +64,9 @@ export default function CertificatesPage() {
     if (!file.type.startsWith("image/")) { setError("Only image files (JPG, PNG, WEBP) are allowed."); return; }
     setError(""); setUploadingImg(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", `cert-photo-${certId}`);
-      const token = sessionStorage.getItem("maac_admin_token") || "";
-      const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-admin-token": token }, body: formData });
-      const data = await res.json();
-      if (data.success) {
-        setEditing(prev => prev ? { ...prev, image: data.path } : null);
-      } else setError(data.error || "Upload failed.");
-    } catch { setError("Upload failed."); }
+      const path = await uploadFile(file, `cert-photo-${certId}`);
+      setEditing(prev => prev ? { ...prev, image: path } : null);
+    } catch (e) { setError(e instanceof Error ? e.message : "Upload failed."); }
     setUploadingImg(false);
   };
 

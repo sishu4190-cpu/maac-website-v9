@@ -100,12 +100,16 @@ export default function GujaratChemicalSupplierPage() {
           <h2 className="section-title mb-8">Chemicals Available for Gujarat Buyers</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { cat: 'Sulphates & Fertilizer Chemicals', products: 'Zinc Sulphate, Magnesium Sulphate, Ferrous Sulphate, Copper Sulphate, Boric Acid, Calcium Nitrate and more', slug: 'sulphates-fertilizers' },
-              { cat: 'EDTA & Chelated Products', products: 'Iron EDTA, Zinc EDTA, Manganese EDTA, Fe EDDHA, Amino Acid 80%, Chelated EDTA Mixture and more', slug: 'edta-chelated-products' },
-              { cat: 'Fluoride Base Products', products: 'Sodium Fluoride, Potassium Fluoride, Ammonium Fluoride, Sodium Cryolite, Calcium Fluoride and more', slug: 'fluoride-base-products' },
-              { cat: 'Acids', products: 'Sulfuric Acid, Phosphoric Acid, Hydrochloric Acid, Nitric Acid, Acetic Acid, Formic Acid and more', slug: 'acids' },
-              { cat: 'Pharmaceutical Products', products: 'Ferrous Fumarate, Ferric Pyrophosphate, Fumaric Acid, Zinc Sulphate USP Grade', slug: 'pharmaceutical-products' },
-              { cat: 'NPK Fertilizers', products: 'NPK 19-19-19, MAP, MKP, Potassium Nitrate, Potassium Sulphate, Potassium Chloride', slug: 'npk-fertilizers' },
+              { cat: 'Sulphate Chemicals', products: 'Zinc Sulphate, Magnesium Sulphate, Ferrous Sulphate, Copper Sulphate and more', slug: 'sulphate-chemicals' },
+              { cat: 'Nitrate Chemicals', products: 'Calcium Nitrate, Sodium Nitrate, Copper Nitrate Pentahydrate', slug: 'nitrate-chemicals' },
+              { cat: 'Chloride Chemicals', products: 'Calcium Chloride, Nickel Chloride, Copper Chloride', slug: 'chloride-chemicals' },
+              { cat: 'Fertilizer Chemicals', products: 'NPK 19-19-19, MAP, MKP, Potassium Nitrate, Potassium Sulphate, Potassium Chloride, Boron grades', slug: 'fertilizer-chemicals' },
+              { cat: 'Textile Chemicals', products: 'Acetic Acid, Formic Acid, Oxalic Acid, Sodium Acetate, Citric Acid', slug: 'textile-chemicals' },
+              { cat: 'Water Treatment Chemicals', products: 'Ferrous Sulphate, Ammonium Sulphate, Sodium Fluoride, Calcium Chloride and more', slug: 'water-treatment-chemicals' },
+              { cat: 'Fluoride Chemicals', products: 'Sodium Fluoride, Potassium Fluoride, Ammonium Fluoride, Sodium Cryolite, Calcium Fluoride and more', slug: 'fluoride-chemicals' },
+              { cat: 'Industrial Chemicals', products: 'Sulfuric Acid, Phosphoric Acid, Hydrochloric Acid, Nitric Acid, Boric Acid and more', slug: 'industrial-chemicals' },
+              { cat: 'EDTA Chemicals', products: 'Iron EDTA, Zinc EDTA, Manganese EDTA, Fe EDDHA, Amino Acid 80%, Chelated EDTA Mixture and more', slug: 'edta-chemicals' },
+              { cat: 'Pharmaceuticals Chemicals', products: 'Ferrous Fumarate, Ferric Pyrophosphate, Fumaric Acid, Zinc Sulphate USP Grade', slug: 'pharmaceuticals-chemicals' },
             ].map(item => (
               <Link key={item.cat} href={`/products/${item.slug}`}
                 className="bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md hover:border-green-200 transition-all group">

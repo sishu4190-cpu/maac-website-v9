@@ -33,7 +33,7 @@ export const certifications: CertificationInfo[] = [
     file: '/assets/maac-media/certificates/ISO-9001-2015.pdf',
     image: '/assets/maac-media/certificate-photos/iso9001.jpg' as string | null,
     validUntil: '11 May 2028',
-    issued: '12 May 2025',
+    issued: '07 May 2026',
   },
   {
     id: 'iso45001',
@@ -44,7 +44,7 @@ export const certifications: CertificationInfo[] = [
     file: '/assets/maac-media/certificates/ISO-45001-2018.pdf',
     image: '/assets/maac-media/certificate-photos/iso45001.jpg' as string | null,
     validUntil: '11 May 2028',
-    issued: '12 May 2025',
+    issued: '07 May 2026',
   },
   {
     id: 'msme',
@@ -92,9 +92,9 @@ export const certifications: CertificationInfo[] = [
   },
 ];
 
-export function getActiveCertifications(): CertificationInfo[] {
+export async function getActiveCertifications(): Promise<CertificationInfo[]> {
   try {
-    const data = readData();
+    const data = await readData();
     if (data.certificateOverrides && data.certificateOverrides.length > 0) {
       return [...data.certificateOverrides].sort((a, b) => a.order - b.order);
     }
@@ -102,6 +102,7 @@ export function getActiveCertifications(): CertificationInfo[] {
   return certifications;
 }
 
-export function getCertificationById(id: string): CertificationInfo | undefined {
-  return getActiveCertifications().find((c) => c.id === id);
+export async function getCertificationById(id: string): Promise<CertificationInfo | undefined> {
+  const all = await getActiveCertifications();
+  return all.find((c) => c.id === id);
 }
