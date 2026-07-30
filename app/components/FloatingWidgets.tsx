@@ -375,36 +375,75 @@ export function PageLoader() {
 }
 
 // ── Scroll Reveal ─────────────────────────────────────────
+//
+// Root cause of the "page looks blank/stuck until I refresh" bug (reported
+// repeatedly on /quality, /gallery, /blog, /social — every page that (a)
+// uses the .reveal / .reveal-scale CSS classes AND (b) fetches data with
+// `await readData()` before rendering):
+//
+// The old version below scanned for .reveal elements exactly once, on the
+// next animation frame after each pathname change, and gave up permanently
+// after a fixed 700ms "safety" timeout. On a client-side <Link> navigation,
+// Next.js briefly shows the route's loading.tsx fallback while the target
+// page's async data fetch (readData() hitting Vercel Blob) resolves. If
+// that fetch took longer than ~700ms, the *real* page content only got
+// inserted into the DOM AFTER this effect had already disconnected its
+// observer and cleared its timers — so those elements never received the
+// "revealed" class and stayed at opacity:0 forever, i.e. invisible, until a
+// full page reload reset everything. Pages with no .reveal usage (Home,
+// Products) never showed the symptom, which is why it looked page-specific.
+//
+// Fix: a MutationObserver keeps watching the page for as long as it's
+// mounted (not just for one fixed window), so no matter when the real
+// content actually lands in the DOM, newly-added .reveal elements are
+// always picked up and revealed. A generous 4s safety net still exists as
+// an absolute last resort, but the MutationObserver means it should never
+// actually be needed.
 export function ScrollReveal() {
   const pathname = usePathname();
   useEffect(() => {
-    // Re-scan for reveal elements every time the route changes (client-side
-    // navigation doesn't remount this component, so without this the new
-    // page's content stayed at opacity:0 until a hard refresh).
-    let obs: IntersectionObserver | null = null;
-    let safety: ReturnType<typeof setTimeout> | null = null;
+    const SELECTOR = ".reveal, .reveal-left, .reveal-scale";
 
-    const raf = requestAnimationFrame(() => {
-      const els = document.querySelectorAll(".reveal, .reveal-left, .reveal-scale");
-      if (!els.length) return;
-      obs = new IntersectionObserver(
-        (entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("revealed"); obs?.unobserve(e.target); } }); },
-        { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
-      );
-      els.forEach(el => obs?.observe(el));
-      // Safety net: guarantee everything becomes visible even if the
-      // observer misses an element for any reason (e.g. zero-height parent
-      // during a transition).
-      safety = setTimeout(() => {
-        document.querySelectorAll(".reveal, .reveal-left, .reveal-scale").forEach(el => el.classList.add("revealed"));
-        obs?.disconnect();
-      }, 700);
-    });
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("revealed");
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    const scanAndObserve = () => {
+      document.querySelectorAll(SELECTOR).forEach((el) => {
+        if (!el.classList.contains("revealed")) io.observe(el);
+      });
+    };
+
+    // Initial scan covers content that's already in the DOM by the time
+    // this effect runs (the common case — most pages resolve well within a
+    // frame).
+    scanAndObserve();
+
+    // Keep scanning whenever the DOM changes underneath us, so content that
+    // streams in later (e.g. the real page replacing a loading.tsx
+    // fallback after a slow data fetch) is never missed, no matter how long
+    // it takes.
+    const mo = new MutationObserver(scanAndObserve);
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    // Absolute last resort: force everything visible after 4s so content
+    // can never be stuck invisible even in a scenario nobody anticipated.
+    const safety = setTimeout(() => {
+      document.querySelectorAll(SELECTOR).forEach((el) => el.classList.add("revealed"));
+    }, 4000);
 
     return () => {
-      cancelAnimationFrame(raf);
-      obs?.disconnect();
-      if (safety) clearTimeout(safety);
+      io.disconnect();
+      mo.disconnect();
+      clearTimeout(safety);
     };
   }, [pathname]);
   return null;
