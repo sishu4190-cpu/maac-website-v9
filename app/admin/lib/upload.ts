@@ -105,8 +105,22 @@ export async function uploadFile(rawFile: File, type: string): Promise<string> {
     );
     return blob.url;
   } catch (directErr) {
-    // Fallback: old server-proxy path (fine for local dev / small files —
-    // Vercel's 4.5MB serverless body limit still applies here).
+    const directMsg = directErr instanceof Error ? directErr.message : String(directErr);
+    console.warn('[upload] Direct-to-Blob upload failed, trying fallback proxy path. Reason:', directMsg);
+
+    // The fallback proxy route re-hits Vercel's hard, non-configurable
+    // 4.5MB serverless request-body limit — there's no way around that on
+    // this path. Rather than let a file that's obviously too large fail
+    // with a confusing raw platform error (e.g. a plain-text "Request
+    // Entity Too Large" response that isn't valid JSON), skip straight to
+    // a clear message so the real problem — whatever broke the direct
+    // upload — isn't hidden behind an unrelated size error.
+    if (file.size > 4 * 1024 * 1024) {
+      throw new Error(
+        `Upload failed: ${directMsg}. (This file is also ${(file.size / (1024 * 1024)).toFixed(1)}MB, too large for the backup upload method to handle, so please also fix the reason above.)`
+      );
+    }
+
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -119,12 +133,19 @@ export async function uploadFile(rawFile: File, type: string): Promise<string> {
         }),
         45000
       );
-      const data = await res.json();
+      const rawText = await res.text();
+      let data: { success?: boolean; error?: string; path?: string };
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(`Server returned an unexpected response (${res.status}): ${rawText.slice(0, 120)}`);
+      }
       if (!data.success) throw new Error(data.error || 'Upload failed');
       return data.path as string;
     } catch (fallbackErr) {
-      console.error('[upload] Both direct and fallback upload failed:', { directErr, fallbackErr });
-      throw fallbackErr instanceof Error ? fallbackErr : new Error('Upload failed. Please try again or use a different photo.');
+      const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+      console.error('[upload] Both direct and fallback upload failed:', { directMsg, fallbackMsg });
+      throw new Error(`Upload failed: ${directMsg}`);
     }
   }
 }
