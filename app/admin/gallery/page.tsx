@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import AdminShell from "../lib/AdminShell";
 import { adminGet, adminPost } from "../lib/api";
 import { uploadFile } from "../lib/upload";
-import { Upload, Trash2, ArrowLeft, CheckCircle, Image as ImageIcon, Clock } from "lucide-react";
+import { Upload, Trash2, ArrowLeft, CheckCircle, Image as ImageIcon, Clock, AlertTriangle } from "lucide-react";
 
 interface GalleryImage { id: string; url: string; caption?: string }
 interface GalleryCategory {
@@ -18,6 +18,7 @@ export default function GalleryAdminPage() {
   const [saved, setSaved] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const coverRef = useRef<HTMLInputElement | null>(null);
   const imagesRef = useRef<HTMLInputElement | null>(null);
 
@@ -30,8 +31,10 @@ export default function GalleryAdminPage() {
 
   const upload = async (file: File, type: string): Promise<string | null> => {
     try {
+      setUploadError(null);
       return await uploadFile(file, type);
-    } catch {
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed. Please try again.");
       return null;
     }
   };
@@ -107,6 +110,13 @@ export default function GalleryAdminPage() {
           <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <CheckCircle size={16} style={{ color: "#15803d" }} />
             <span style={{ fontSize: 13, color: "#15803d", fontWeight: 600 }}>Saved! Changes are live on the Gallery page immediately.</span>
+          </div>
+        )}
+
+        {uploadError && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 16 }}>
+            <AlertTriangle size={16} style={{ color: "#dc2626", flexShrink: 0, marginTop: 1 }} />
+            <span style={{ fontSize: 13, color: "#b91c1c", fontWeight: 600 }}>{uploadError}</span>
           </div>
         )}
 

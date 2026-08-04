@@ -46,32 +46,85 @@ async function convertHeicToJpegIfNeeded(file: File): Promise<File> {
   }
 }
 
+// Photos saved via "Save image as" from Google Images (and some other
+// sources) are frequently given a ".jfif" extension — or no reliable MIME
+// type at all — even though the underlying file is a normal JPEG. Browsers
+// then report an empty/generic `file.type` for these, which our upload
+// route doesn't recognise as an allowed image type. Previously this quietly
+// fell through to the fallback proxy-upload path (which has a stricter size
+// ceiling) and could appear to hang forever with no explanation. We instead
+// resolve the correct content type from the file extension up front, so
+// these files go straight through the normal, unlimited direct-to-Blob path
+// like any other photo.
+const EXT_TO_MIME: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', jfif: 'image/jpeg', jpe: 'image/jpeg', pjpeg: 'image/jpeg',
+  png: 'image/png', gif: 'image/gif', webp: 'image/webp',
+  heic: 'image/heic', heif: 'image/heif', pdf: 'application/pdf',
+  mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime',
+};
+
+function resolveContentType(file: File): string {
+  if (file.type && file.type !== 'application/octet-stream') return file.type;
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  return EXT_TO_MIME[ext] || file.type || 'application/octet-stream';
+}
+
+// Wraps a promise so an upload can never spin forever with no feedback —
+// if it hasn't settled within `ms`, we reject with a clear, actionable
+// message instead of leaving the admin looking at a stuck "Uploading..."
+// button indefinitely.
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Upload timed out after ${Math.round(ms / 1000)}s. Please check your internet connection and try again.`));
+    }, ms);
+    promise.then(
+      (val) => { clearTimeout(timer); resolve(val); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
+
 export async function uploadFile(rawFile: File, type: string): Promise<string> {
   const file = await convertHeicToJpegIfNeeded(rawFile);
+  const contentType = resolveContentType(file);
   const token = typeof window !== 'undefined' ? sessionStorage.getItem('maac_admin_token') || '' : '';
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const pathname = `uploads/${type}-${Date.now()}-${safeName}`;
 
   try {
     const { upload } = await import('@vercel/blob/client');
-    const blob = await upload(pathname, file, {
-      access: 'public',
-      handleUploadUrl: '/api/admin/upload-token',
-      clientPayload: JSON.stringify({ token }),
-    });
+    const blob = await withTimeout(
+      upload(pathname, file, {
+        access: 'public',
+        handleUploadUrl: '/api/admin/upload-token',
+        clientPayload: JSON.stringify({ token }),
+        contentType,
+      }),
+      45000
+    );
     return blob.url;
-  } catch {
-    // Fallback: old server-proxy path (fine for local dev / small files).
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', type);
-    const res = await fetch('/api/admin/upload', {
-      method: 'POST',
-      headers: { 'x-admin-token': token },
-      body: formData,
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || 'Upload failed');
-    return data.path as string;
+  } catch (directErr) {
+    // Fallback: old server-proxy path (fine for local dev / small files —
+    // Vercel's 4.5MB serverless body limit still applies here).
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      const res = await withTimeout(
+        fetch('/api/admin/upload', {
+          method: 'POST',
+          headers: { 'x-admin-token': token },
+          body: formData,
+        }),
+        45000
+      );
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Upload failed');
+      return data.path as string;
+    } catch (fallbackErr) {
+      console.error('[upload] Both direct and fallback upload failed:', { directErr, fallbackErr });
+      throw fallbackErr instanceof Error ? fallbackErr : new Error('Upload failed. Please try again or use a different photo.');
+    }
   }
 }
