@@ -26,7 +26,7 @@ export default async function GalleryCategoryPage({ params }: { params: Promise<
 
   const categorySchema = {
     '@context': 'https://schema.org',
-    '@type': cat.comingSoon ? 'CollectionPage' : 'ImageGallery',
+    '@type': cat.images && cat.images.length > 0 ? 'ImageGallery' : 'CollectionPage',
     name: `${cat.name} — Mangalam Acid and Chemicals Gallery`,
     description: cat.tagline,
     url: `https://mangalamchemicals.com/gallery/${cat.id}`,
@@ -59,7 +59,15 @@ export default async function GalleryCategoryPage({ params }: { params: Promise<
 
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          {cat.comingSoon ? (
+          {/* Photos always take priority: if the admin has uploaded any
+              images for this category, show them — regardless of the
+              "comingSoon" flag. This flag should only ever control what
+              visitors see when there truly are zero photos yet, so an
+              uploaded photo can never be silently hidden behind an old
+              "Coming Soon" banner. */}
+          {cat.images && cat.images.length > 0 ? (
+            <GalleryGrid images={cat.images} title={cat.name} />
+          ) : cat.comingSoon ? (
             <div className="reveal" style={{ textAlign: 'center', padding: '60px 20px', background: '#f8fdf9', borderRadius: 20, border: '1px dashed #cfe8d6' }}>
               <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                 <Clock size={32} style={{ color: '#a16207' }} />
@@ -74,8 +82,6 @@ export default async function GalleryCategoryPage({ params }: { params: Promise<
               </p>
               <Link href="/contact#enquiry" className="btn-primary">Contact Us Meanwhile</Link>
             </div>
-          ) : cat.images && cat.images.length > 0 ? (
-            <GalleryGrid images={cat.images} title={cat.name} />
           ) : (
             <div className="reveal" style={{ textAlign: 'center', padding: '60px 20px', background: '#f8fdf9', borderRadius: 20, border: '1px dashed #cfe8d6' }}>
               <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: '#1a4d2e', marginBottom: 8 }}>Photos being added</h2>

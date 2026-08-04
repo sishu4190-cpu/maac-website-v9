@@ -27,6 +27,11 @@ export async function POST(request: Request): Promise<NextResponse> {
         return {
           allowedContentTypes: [
             'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+            // HEIC/HEIF = the default photo format on iPhones (iOS 11+).
+            // The admin upload helper (app/admin/lib/upload.ts) converts
+            // these to JPEG in the browser before upload, but these are kept
+            // here too as a safety net in case that conversion is skipped.
+            'image/heic', 'image/heif',
             'application/pdf',
             'video/mp4', 'video/webm', 'video/quicktime',
           ],

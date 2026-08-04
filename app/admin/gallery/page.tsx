@@ -82,6 +82,13 @@ export default function GalleryAdminPage() {
     flash();
   };
 
+  const toggleComingSoon = async () => {
+    if (!active) return;
+    await adminPost("gallery_toggle_coming_soon", { categoryId: active.id });
+    setCategories((prev) => prev.map((c) => (c.id === active.id ? { ...c, comingSoon: !c.comingSoon } : c)));
+    flash();
+  };
+
   const cardStyle = { background: "white", borderRadius: 12, border: "1px solid #f1f5f9", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" };
 
   if (loading) {
@@ -103,11 +110,31 @@ export default function GalleryAdminPage() {
           </div>
         )}
 
-        {active.comingSoon && (
-          <div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, marginBottom: 16, fontSize: 13, color: "#a16207" }}>
-            <Clock size={15} /> This category currently shows &quot;Coming Soon&quot; on the website. You can still upload cover/photos now — they&apos;ll be ready when you launch it.
+        <div style={{ ...cardStyle, padding: "14px 18px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Clock size={16} style={{ color: active.comingSoon ? "#a16207" : "#9ca3af" }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>&quot;Coming Soon&quot; banner</div>
+              <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                {active.comingSoon
+                  ? "Visitors see a “Coming Soon” message on this category page. Uploaded photos are still shown automatically if you have any."
+                  : "Off — visitors see this category's normal photos (or “Photos being added” if empty)."}
+              </div>
+            </div>
           </div>
-        )}
+          <button
+            onClick={toggleComingSoon}
+            style={{
+              flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "8px 16px",
+              background: active.comingSoon ? "#fef3c7" : "#f0fdf4",
+              border: `1px solid ${active.comingSoon ? "#fde68a" : "#86efac"}`,
+              borderRadius: 999, fontSize: 12.5, fontWeight: 700,
+              color: active.comingSoon ? "#a16207" : "#15803d", cursor: "pointer",
+            }}
+          >
+            {active.comingSoon ? "Turn OFF Coming Soon" : "Turn ON Coming Soon"}
+          </button>
+        </div>
 
         {/* Cover image */}
         <div style={{ ...cardStyle, padding: 20, marginBottom: 20, maxWidth: 480 }}>

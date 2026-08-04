@@ -44,6 +44,7 @@ function describeAction(section: string, payload: Record<string, unknown> = {}):
     case 'gallery_image_add': return { label: 'Uploaded gallery photo', detail: `Category: ${s(payload.categoryId, 30)}` };
     case 'gallery_image_update': return { label: 'Edited gallery photo caption', detail: `Category: ${s(payload.categoryId, 30)}` };
     case 'gallery_image_delete': return { label: 'Deleted gallery photo', detail: `Category: ${s(payload.categoryId, 30)}` };
+    case 'gallery_toggle_coming_soon': return { label: 'Toggled gallery "Coming Soon" banner', detail: `Category: ${s(payload.categoryId, 30)}` };
     case 'catalogue_update': return { label: 'Updated catalogue PDF', detail: '' };
     case 'catalogue_reset': return { label: 'Removed catalogue PDF', detail: '' };
     case 'password_change': return { label: 'Changed admin password', detail: 'Via Settings → Security' };
@@ -193,6 +194,11 @@ export async function POST(req: NextRequest) {
       case 'gallery_image_delete': {
         const cat = data.galleryCategories.find((c) => c.id === payload.categoryId);
         if (cat) cat.images = cat.images.filter((i) => i.id !== payload.imageId);
+        break;
+      }
+      case 'gallery_toggle_coming_soon': {
+        const cat = data.galleryCategories.find((c) => c.id === payload.categoryId);
+        if (cat) cat.comingSoon = !cat.comingSoon;
         break;
       }
 

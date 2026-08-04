@@ -14,8 +14,40 @@
 // connected store), the token request fails and we transparently fall back
 // to the original small-file server-proxy upload so local development keeps
 // working without any cloud setup.
+//
+// iPhone photos: iOS saves photos as HEIC/HEIF by default, a format most
+// browsers (Chrome, Firefox, Edge — anything non-Safari) cannot display in
+// an <img> tag. Rather than reject these uploads or let them silently show
+// as broken images on the live site, we detect HEIC/HEIF here and convert
+// it to a normal JPEG right in the browser before it's ever uploaded. This
+// runs automatically for every admin upload (Gallery, Products,
+// Certificates, Hero, etc.) since they all share this one function.
 
-export async function uploadFile(file: File, type: string): Promise<string> {
+const HEIC_TYPES = ['image/heic', 'image/heif'];
+
+async function convertHeicToJpegIfNeeded(file: File): Promise<File> {
+  const looksHeic =
+    HEIC_TYPES.includes(file.type.toLowerCase()) ||
+    /\.hei[cf]$/i.test(file.name);
+  if (!looksHeic) return file;
+
+  try {
+    const heic2any = (await import('heic2any')).default;
+    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+    const jpegBlob = Array.isArray(result) ? result[0] : result;
+    const newName = file.name.replace(/\.hei[cf]$/i, '.jpg');
+    return new File([jpegBlob], newName || 'photo.jpg', { type: 'image/jpeg' });
+  } catch (err) {
+    // If conversion fails for any reason, fall back to uploading the
+    // original file rather than blocking the admin's upload entirely —
+    // the upload-token route still allows HEIC/HEIF as a safety net.
+    console.warn('[upload] HEIC to JPEG conversion failed, uploading original file:', err);
+    return file;
+  }
+}
+
+export async function uploadFile(rawFile: File, type: string): Promise<string> {
+  const file = await convertHeicToJpegIfNeeded(rawFile);
   const token = typeof window !== 'undefined' ? sessionStorage.getItem('maac_admin_token') || '' : '';
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const pathname = `uploads/${type}-${Date.now()}-${safeName}`;

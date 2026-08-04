@@ -84,7 +84,9 @@ export default async function GalleryPage() {
                         <Icon size={56} style={{ color: '#86b895' }} />
                       </div>
                     )}
-                    {cat.comingSoon && (
+                    {/* Only show the "Coming Soon" badge when there are truly
+                        no photos yet — an uploaded photo always wins. */}
+                    {cat.comingSoon && count === 0 && (
                       <div style={{ position: 'absolute', top: 10, right: 10, background: '#f4a228', color: 'white', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Clock size={12} /> Coming Soon
                       </div>
@@ -100,7 +102,7 @@ export default async function GalleryPage() {
                   </div>
                   <div style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 12.5, color: '#6b7280' }}>
-                      {cat.comingSoon ? 'Images coming soon' : `${count} ${count === 1 ? 'photo' : 'photos'}`}
+                      {count > 0 ? `${count} ${count === 1 ? 'photo' : 'photos'}` : cat.comingSoon ? 'Images coming soon' : '0 photos'}
                     </span>
                     <span style={{ fontSize: 12.5, color: '#1a4d2e', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}>
                       View <ChevronRight size={14} />
