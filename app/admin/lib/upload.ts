@@ -88,7 +88,13 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 export async function uploadFile(rawFile: File, type: string): Promise<string> {
   const file = await convertHeicToJpegIfNeeded(rawFile);
   const contentType = resolveContentType(file);
-  const token = typeof window !== 'undefined' ? sessionStorage.getItem('maac_admin_token') || '' : '';
+  // Same fallback as app/admin/lib/api.ts's getToken() — without this,
+  // sessions that never explicitly wrote a token to sessionStorage (relying
+  // on the server's built-in 'maac-admin-dev' bypass instead, same as every
+  // other admin save action) would send an empty token here and get
+  // rejected as Unauthorized on every single upload, while everything else
+  // in the admin panel kept working fine.
+  const token = typeof window !== 'undefined' ? sessionStorage.getItem('maac_admin_token') || 'maac-admin-dev' : 'maac-admin-dev';
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const pathname = `uploads/${type}-${Date.now()}-${safeName}`;
 
