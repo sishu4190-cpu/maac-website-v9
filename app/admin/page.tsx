@@ -11,7 +11,7 @@ const totalProducts = allProducts.length;
 const totalCategories = categories.length;
 
 export default function AdminDashboard() {
-  const [data, setData] = useState<{ enquiries: { id: string; name: string; company: string; product: string; qty: string; location: string; status: string; time: string }[]; adminPassword?: string } | null>(null);
+  const [data, setData] = useState<{ enquiries: { id: string; name: string; company: string; product: string; quantity: string; deliveryLocation: string; status: string; createdAt: string }[]; adminPassword?: string } | null>(null);
   const [showAlert, setShowAlert] = useState(true);
   const [loading, setLoading] = useState(true);
   const [storageStatus, setStorageStatus] = useState<{ connected: boolean; mode: string; message: string; isDeployed?: boolean } | null>(null);
@@ -174,8 +174,8 @@ export default function AdminDashboard() {
                           <div style={{ fontSize: 11, color: "#9ca3af" }}>{enq.company}</div>
                         </td>
                         <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>{enq.product}</td>
-                        <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>{enq.qty}</td>
-                        <td style={{ padding: "12px 16px", fontSize: 12, color: "#6b7280" }}>{enq.location}</td>
+                        <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>{enq.quantity}</td>
+                        <td style={{ padding: "12px 16px", fontSize: 12, color: "#6b7280" }}>{enq.deliveryLocation}</td>
                         <td style={{ padding: "12px 16px" }}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999, background: sc.bg, color: sc.color }}>
                             <span style={{ width: 6, height: 6, borderRadius: "50%", background: sc.dot }} />
@@ -184,7 +184,7 @@ export default function AdminDashboard() {
                         </td>
                         <td style={{ padding: "12px 16px", fontSize: 11, color: "#9ca3af" }}>
                           <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                            <Clock size={11} />{timeAgo(enq.time)}
+                            <Clock size={11} />{timeAgo(enq.createdAt)}
                           </span>
                         </td>
                         <td style={{ padding: "12px 16px" }}>
